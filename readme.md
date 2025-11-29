@@ -18,9 +18,9 @@ Responsive UI – layout enak dipake di HP maupun desktop.
 
 🛠️ Tech Stack
 Layer	Tools
-Frontend	HTML, CSS, JavaScript (atau framework yang lo pake)
-Backend	PHP / Laravel / Node.js / Next.js (ubah sesuai project lo)
-Database	MySQL / SQLite / PostgreSQL
+Frontend	Bootstrap,JavaScript 
+Backend	 Laravel
+Database	MySQL 
 UI Icons	Bootstrap Icons / Font Awesome
 📦 Installation
 
