@@ -14,10 +14,11 @@ return new class extends Migration
         Schema::create('attendances', function (Blueprint $table) {
             $table->id();
             $table->foreignId('student_id')->constrained('students');
-            $table->foreignId('schdule_id')->constrained('schedules');
-            $table->dateTime('date');
+            $table->foreignId('schedule_id')->constrained('schedules');
+            $table->date('attendance_date');
             $table->enum('status', ['present', 'absent', 'sick', 'permission','dispensed']);
             $table->text('note')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         }); 
     }

@@ -17,7 +17,8 @@ return new class extends Migration
             $table->foreignId('study_group_id')->constrained('study_groups');
             $table->string('nis')->unique();
             $table->string('nisn')->unique();
-            $table->string('verification_code');
+            $table->boolean('first_log');
+            $table->string('verification_code')->default('nis');
             $table->timestamps();
             $table->softDeletes();
         });

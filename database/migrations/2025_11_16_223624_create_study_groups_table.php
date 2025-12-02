@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('study_groups', function (Blueprint $table) {
             $table->id();
             $table->enum('class_number', ['1', '2', '3', '4', '5', '6']);
-            $table->enum('grade', ['X', 'XI', 'XII'])->change();
+            $table->enum('grade', ['X', 'XI', 'XII']);
             $table->enum('major', ['PPLG', 'TJKT', 'DKV', 'PMN', 'MPLB', 'KLN', 'HTL']);
             $table->timestamps();
             $table->softDeletes();

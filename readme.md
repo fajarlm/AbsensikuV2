@@ -8,7 +8,7 @@ Login & Authentication – akses aman buat tiap user.
 
 Dashboard Real-Time – langsung lihat siapa yang hadir.
 
-Check-In / Check-Out – proses absensi cepat sekali klik.
+Check-In / Check-Out –  proses absensi cepat sekali klik.
 
 Riwayat Kehadiran – data tersimpan rapi per hari/bulan.
 

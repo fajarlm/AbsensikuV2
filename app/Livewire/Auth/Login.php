@@ -9,12 +9,7 @@ class Login extends Component
 {
     public $username = '';
     public $password = '';
-    public $showPassword = false;
-
-    public function togglePassword()
-    {
-        $this->showPassword = !$this->showPassword;
-    }
+  
 
     public function login()
     {
@@ -27,7 +22,7 @@ class Login extends Component
             'password.min' => 'Password minimal 6 karakter',
         ]);
 
-        $data = ['username' => $this->username,'password' => $this->password];
+        $data = ['username' => $this->username, 'password' => $this->password];
         if (Auth::attempt($data)) {
             if (Auth::user()->role === 'admin') {
                 return redirect()->route('admin.dashboard')->with('success', 'Berhasil login sebagai admin');
@@ -42,9 +37,18 @@ class Login extends Component
         }
     }
 
+    public function logout()
+    {
+        Auth::logout();
+        session()->invalidate();
+        session()->regenerateToken();
+
+        return redirect()->route('login');
+    }
+
     public function render()
     {
-        return view('livewire.auth.login');
+        // return view('livewire.auth.login', ['title' => 'Login'])->layout('layouts.auth'); 
+        return view('livewire.auth.login', ['title' => 'Login']); 
     }
-   
 }
