@@ -85,32 +85,7 @@
                     </a>
                 </li>
 
-                <!-- Laporan -->
-                <li class="nav-header">LAPORAN</li>
-                
-                <li class="nav-item">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon bi bi-file-earmark-text"></i>
-                        <p>
-                            Laporan
-                            <i class="nav-arrow bi bi-chevron-right"></i>
-                        </p>
-                    </a>
-                    <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="#" class="nav-link">
-                                <i class="nav-icon bi bi-circle"></i>
-                                <p>Laporan Harian</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="#" class="nav-link">
-                                <i class="nav-icon bi bi-circle"></i>
-                                <p>Laporan Bulanan</p>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
+              
             </ul>
         </nav>
     </div>

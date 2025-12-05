@@ -2,9 +2,12 @@
 
 namespace App\Livewire\Admin\StudyGroup;
 
+use App\Exports\StudyGroupExport;
 use App\Models\StudyGroup;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Maatwebsite\Excel\Facades\Excel;
 
 class Index extends Component
 {
@@ -23,10 +26,22 @@ class Index extends Component
     public $class_number;
     public $isEdit = false;
 
-    public function updatingSearch() { $this->resetPage(); }
-    public function updatingFilterGrade() { $this->resetPage(); }
-    public function updatingFilterMajor() { $this->resetPage(); }
-    public function updatingPerPage() { $this->resetPage(); }
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+    public function updatingFilterGrade()
+    {
+        $this->resetPage();
+    }
+    public function updatingFilterMajor()
+    {
+        $this->resetPage();
+    }
+    public function updatingPerPage()
+    {
+        $this->resetPage();
+    }
 
     protected function rules()
     {
@@ -46,7 +61,11 @@ class Index extends Component
     public function resetForm()
     {
         $this->reset([
-            'study_group_id', 'grade', 'major', 'class_number', 'isEdit'
+            'study_group_id',
+            'grade',
+            'major',
+            'class_number',
+            'isEdit'
         ]);
         $this->resetValidation();
     }
@@ -71,56 +90,69 @@ class Index extends Component
         $this->dispatch('openModal');
     }
 
-   public function save()
-{
-    $this->validate();
+    public function save()
+    {
+        $this->validate();
 
-    try {
-        if ($this->isEdit) {
-            // Cek apakah kombinasi baru sudah ada (kecuali data ini sendiri)
-            $exists = StudyGroup::where('grade', $this->grade)
-                ->where('major', $this->major)
-                ->where('class_number', $this->class_number)
-                ->where('id', '!=', $this->study_group_id)
-                ->exists();
+        try {
+            if ($this->isEdit) {
+                // Cek apakah kombinasi baru sudah ada (kecuali data ini sendiri)
+                $exists = StudyGroup::where('grade', $this->grade)
+                    ->where('major', $this->major)
+                    ->where('class_number', $this->class_number)
+                    ->where('id', '!=', $this->study_group_id)
+                    ->exists();
 
-            if ($exists) {
-                $this->addError('grade', 'Kelas sudah ada! Kombinasi tingkat, jurusan, dan nomor kelas harus unik.');
-                return;
+                if ($exists) {
+                    $this->addError('grade', 'Kelas sudah ada! Kombinasi tingkat, jurusan, dan nomor kelas harus unik.');
+                    return;
+                }
+
+                StudyGroup::where('id', $this->study_group_id)->update([
+                    'grade'        => $this->grade,
+                    'major'        => $this->major,
+                    'class_number' => $this->class_number,
+                ]);
+
+                session()->flash('success', 'Kelas berhasil diperbarui!');
+            } else {
+                // Saat tambah baru → langsung create, kalau duplikat akan error karena unique di DB
+                StudyGroup::create([
+                    'grade'        => $this->grade,
+                    'major'        => $this->major,
+                    'class_number' => $this->class_number,
+                ]);
+
+                session()->flash('success', 'Kelas berhasil ditambahkan!');
             }
 
-            StudyGroup::where('id', $this->study_group_id)->update([
-                'grade'        => $this->grade,
-                'major'        => $this->major,
-                'class_number' => $this->class_number,
-            ]);
-
-            session()->flash('success', 'Kelas berhasil diperbarui!');
-        } else {
-            // Saat tambah baru → langsung create, kalau duplikat akan error karena unique di DB
-            StudyGroup::create([
-                'grade'        => $this->grade,
-                'major'        => $this->major,
-                'class_number' => $this->class_number,
-            ]);
-
-            session()->flash('success', 'Kelas berhasil ditambahkan!');
-        }
-
-        $this->resetForm();
-        $this->dispatch('closeModal');
-
-    } catch (\Illuminate\Database\QueryException $e) {
-        // Error 23000 = unique constraint violation
-        if (str_contains($e->getMessage(), 'study_groups_unique')) {
-            session()->flash('error', 'Gagal! Kelas dengan kombinasi tersebut sudah ada.');
-        } else {
+            $this->resetForm();
+            $this->dispatch('closeModal');
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Error 23000 = unique constraint violation
+            if (str_contains($e->getMessage(), 'study_groups_unique')) {
+                session()->flash('error', 'Gagal! Kelas dengan kombinasi tersebut sudah ada.');
+            } else {
+                session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            }
+        } catch (\Exception $e) {
             session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
-    } catch (\Exception $e) {
-        session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
     }
-}
+
+    public function exportPdf()
+    {
+        $studyGroup = StudyGroup::all();
+        view()->share('studyGroup', $studyGroup);
+        $pdf = Pdf::loadView('admin.study-group.print_pdf', $studyGroup);
+        $fileName = 'data-Rombel' . \Carbon\Carbon::now()->timestamp . '.pdf';
+        return $pdf->download($fileName);
+    }
+
+    public function exportExcel()
+    {
+        return Excel::download(new StudyGroupExport, 'data-studyGroup.xlsx');
+    }
 
     public function deleteConfirm($id)
     {
@@ -148,8 +180,8 @@ class Index extends Component
         $groups = StudyGroup::query()
             ->when($this->search, function ($q) {
                 $q->where('grade', 'like', "%{$this->search}%")
-                  ->orWhere('major', 'like', "%{$this->search}%")
-                  ->orWhere('class_number', 'like', "%{$this->search}%");
+                    ->orWhere('major', 'like', "%{$this->search}%")
+                    ->orWhere('class_number', 'like', "%{$this->search}%");
             })
             ->when($this->filterGrade, fn($q) => $q->where('grade', $this->filterGrade))
             ->when($this->filterMajor, fn($q) => $q->where('major', $this->filterMajor))

@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('students', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('study_group_id')->constrained('study_groups');
+            $table->foreignId('study_group_id')->constrained('study_groups')->onDelete('cascade');
             $table->string('nis')->unique();
             $table->string('nisn')->unique();
-            $table->boolean('first_log');
+            $table->boolean('first_log')->default(false);
             $table->string('verification_code')->default('nis');
             $table->timestamps();
             $table->softDeletes();

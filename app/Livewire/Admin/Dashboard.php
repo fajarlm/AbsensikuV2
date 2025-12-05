@@ -3,6 +3,10 @@
 namespace App\Livewire\Admin;
 
 use App\Models\Attendance;
+use App\Models\Student;
+use App\Models\StudyGroup;
+use App\Models\Subject;
+use App\Models\Teacher;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
@@ -12,12 +16,15 @@ class Dashboard extends Component
     public $totalUsers;
     public $totalStudents;
     public $totalTeachers;
+    public $totalStudyGroups;
+    public $totalSubjects;
     public $todayAttendance;
 
     // Data untuk chart
-    public $usersByRole;
-    public $attendanceByMonth;
-    public $attendanceByStatus;
+    public $attendanceWeekly;
+    public $genderDistribution;
+    public $studentsPerClass;
+    public $monthlyRegistration;
 
     public function mount()
     {
@@ -28,54 +35,102 @@ class Dashboard extends Component
     public function loadStatistics()
     {
         $this->totalUsers = User::count();
-        $this->totalStudents = User::where('role', 'student')->count();
-        $this->totalTeachers = User::where('role', 'teacher')->count();
+        $this->totalStudents = Student::count();
+        $this->totalTeachers = Teacher::count();
+        $this->totalStudyGroups = StudyGroup::count();
+        $this->totalSubjects = Subject::count();
         $this->todayAttendance = Attendance::whereDate('created_at', today())->count();
     }
 
     public function loadChartData()
     {
-        // Data untuk Pie Chart - Users by Role
-        $this->usersByRole = [
-            'labels' => ['Admin', 'Guru', 'Siswa'],
-            'data' => [
-                User::where('role', 'admin')->count(),
-                User::where('role', 'teacher')->count(),
-                User::where('role', 'student')->count(),
-            ],
-        ];
-
-        // Data untuk Line Chart - Attendance by Month (6 bulan terakhir)
-        $attendanceData = Attendance::select(
-                DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
+        // 1. Data Kehadiran Mingguan (7 hari terakhir)
+        $weeklyAttendance = Attendance::select(
+                DB::raw('DATE(created_at) as date'),
+                'status',
                 DB::raw('count(*) as total')
             )
-            ->where('created_at', '>=', now()->subMonths(6))
-            ->groupBy('month')
+            ->where('created_at', '>=', now()->subDays(7))
+            ->groupBy('date', 'status')
+            ->orderBy('date')
+            ->get();
+
+        $dates = [];
+        $hadir = [];
+        $izin = [];
+        $sakit = [];
+        $alpa = [];
+
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i)->format('Y-m-d');
+            $dayName = now()->subDays($i)->locale('id')->isoFormat('dddd');
+            $dates[] = $dayName;
+
+            $hadir[] = $weeklyAttendance->where('date', $date)->where('status', 'hadir')->first()->total ?? 0;
+            $izin[] = $weeklyAttendance->where('date', $date)->where('status', 'izin')->first()->total ?? 0;
+            $sakit[] = $weeklyAttendance->where('date', $date)->where('status', 'sakit')->first()->total ?? 0;
+            $alpa[] = $weeklyAttendance->where('date', $date)->where('status', 'alpa')->first()->total ?? 0;
+        }
+
+        $this->attendanceWeekly = [
+            'labels' => $dates,
+            'hadir' => $hadir,
+            'izin' => $izin,
+            'sakit' => $sakit,
+            'alpa' => $alpa,
+        ];
+
+        // 2. Distribusi Gender
+        $maleStudents = User::where('role', 'student')->where('gender', 'male')->count();
+        $femaleStudents = User::where('role', 'student')->where('gender', 'female')->count();
+
+        $this->genderDistribution = [
+            'labels' => ['Laki-laki', 'Perempuan'],
+            'data' => [$maleStudents, $femaleStudents],
+        ];
+
+        $studentsPerClass = StudyGroup::whereHas('students')->withCount('students')->get();
+
+        $this->studentsPerClass = [
+            'labels' => $studentsPerClass->pluck('name')->toArray(),
+            'data' => $studentsPerClass->pluck('students_count')->toArray(),
+        ];
+
+        // 4. Pendaftaran Bulanan (12 bulan terakhir)
+        $registrations = Student::select(
+                DB::raw('MONTH(created_at) as month'),
+                DB::raw('YEAR(created_at) as year'),
+                DB::raw('count(*) as total')
+            )
+            ->where('created_at', '>=', now()->subMonths(12))
+            ->groupBy('year', 'month')
+            ->orderBy('year')
             ->orderBy('month')
             ->get();
 
-        $this->attendanceByMonth = [
-            'labels' => $attendanceData->pluck('month')->map(function($month) {
-                return \Carbon\Carbon::parse($month)->format('M Y');
-            })->toArray(),
-            'data' => $attendanceData->pluck('total')->toArray(),
-        ];
+        $months = [];
+        $data = [];
 
-        // Data untuk Doughnut Chart - Attendance by Status
-        $this->attendanceByStatus = [
-            'labels' => ['Hadir', 'Izin', 'Sakit', 'Alpa'],
-            'data' => [
-                Attendance::where('status', 'hadir')->count(),
-                Attendance::where('status', 'izin')->count(),
-                Attendance::where('status', 'sakit')->count(),
-                Attendance::where('status', 'alpa')->count(),
-            ],
+        for ($i = 11; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $months[] = $date->locale('id')->isoFormat('MMM');
+            
+            $count = $registrations
+                ->where('month', $date->month)
+                ->where('year', $date->year)
+                ->first();
+            
+            $data[] = $count ? $count->total : 0;
+        }
+
+        $this->monthlyRegistration = [
+            'labels' => $months,
+            'data' => $data,
         ];
     }
+
     public function render()
     {
-        // return view('livewire.admin.dashboard')->layout('layouts.app');
         return view('livewire.admin.dashboard');
     }
 }

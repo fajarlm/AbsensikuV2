@@ -24,7 +24,22 @@
                 <p class="text-muted mb-0">Kelola data siswa dan informasi akademik</p>
             </div>
             <div class="">
-                <a wire:navigate href="trahsPage" class="btn btn-danger">
+
+                <div class="btn-group dropstart">
+                    <button type="button" class="btn btn-warning dropdown-toggle " data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                        <i class="fas fa-print"></i> Export
+                    </button>
+                    <div class="dropdown-menu">
+                        <button wire:click="exportExcel" style="font-size: 18px" class=" text-success dropdown-item"><i
+                                class="fas fa-file-excel"></i>
+                            EXCEL</button>
+                        <button href="exportPdf" style="font-size: 18px" class=" text-danger dropdown-item"><i
+                                class="fas fa-file-pdf"></i>
+                            PDF</button>
+                    </div>
+                </div>
+                <a href="{{ route('admin.user.student.trash') }}" class="btn btn-danger">
                     <i class="bi bi-trash me-1"></i> Data Sampah
                 </a>
                 <button wire:click="create" class="btn btn-primary" data-bs-toggle="modal"
@@ -159,8 +174,8 @@
                                     <td>
                                         @if ($student->user->profile)
                                             <img src="{{ asset('storage/' . $student->user->profile) }}"
-                                                alt="{{ $student->user->name }}" class="rounded-circle" width="45"
-                                                height="45" style="object-fit: cover;">
+                                                alt="{{ $student->user->name }}" class="rounded-circle"
+                                                width="45" height="45" style="object-fit: cover;">
                                         @else
                                             <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
                                                 style="width: 45px; height: 45px; font-size: 18px;">
@@ -335,6 +350,7 @@
                                     @endif
                                 </div>
 
+
                                 <div wire:loading wire:target="profile" class="text-primary mt-2">
                                     <i class="spinner-border spinner-border-sm"></i> Uploading...
                                 </div>
@@ -346,7 +362,15 @@
                                     <i class="bi bi-journal-text me-2"></i>Data Akademik
                                 </h6>
                             </div>
-
+                            <div class="col-md-12">
+                                <label class="form-label">NISN <span class="text-danger">*</span></label>
+                                <input wire:model="nisn" type="text"
+                                    class="form-control @error('nisn') is-invalid @enderror"
+                                    placeholder="Masukkan NISN">
+                                @error('nisn')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                             <div class="col-md-6">
                                 <label class="form-label">NIS <span class="text-danger">*</span></label>
                                 <input wire:model="nis" type="text"

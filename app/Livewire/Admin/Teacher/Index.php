@@ -7,9 +7,12 @@ use App\Models\Teacher;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\WithFileUploads;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
+use App\Exports\TeacherExport;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Storage;
 
 class Index extends Component
 {
@@ -42,10 +45,22 @@ class Index extends Component
     public $isEdit = false;
 
     // Reset pagination when filter changes
-    public function updatingSearch() { $this->resetPage(); }
-    public function updatingFilterGender() { $this->resetPage(); }
-    public function updatingFilterStatus() { $this->resetPage(); }
-    public function updatingPerPage() { $this->resetPage(); }
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+    public function updatingFilterGender()
+    {
+        $this->resetPage();
+    }
+    public function updatingFilterStatus()
+    {
+        $this->resetPage();
+    }
+    public function updatingPerPage()
+    {
+        $this->resetPage();
+    }
 
     // Validation Rules
     protected function rules()
@@ -55,7 +70,7 @@ class Index extends Component
             'username' => 'required|string|max:255|unique:users,username,' . $this->user_id,
             'gender' => 'required',
             'profile' => 'nullable|image|max:2048',
-            
+
             // Teacher specific
             'nip' => 'required|string|unique:teachers,nip,' . $this->teacher_id,
             'status' => 'required',
@@ -123,10 +138,10 @@ class Index extends Component
         $this->username = $teacher->user->username;
         $this->gender = $teacher->user->gender;
         $this->oldProfile = $teacher->user->profile;
-        
+
         $this->nip = $teacher->nip;
         $this->status = $teacher->status;
-        
+
         $this->isEdit = true;
         $this->dispatch('openModal');
     }
@@ -136,10 +151,6 @@ class Index extends Component
     {
         $this->validate();
 
-        try {
-            DB::beginTransaction();
-
-            // Data User
             $userData = [
                 'name' => $this->name,
                 'username' => $this->username,
@@ -151,7 +162,6 @@ class Index extends Component
                 $userData['password'] = Hash::make($this->password);
             }
 
-            // Handle profile photo
             if ($this->profile) {
                 if ($this->oldProfile) {
                     Storage::disk('public')->delete($this->oldProfile);
@@ -159,39 +169,29 @@ class Index extends Component
                 $userData['profile'] = $this->profile->store('profiles', 'public');
             }
 
-            // Teacher Data
             $teacherData = [
                 'nip' => $this->nip,
-                'status' => $this->status,
+                // 'status' => $this->status,
             ];
 
             if ($this->isEdit) {
-                // Update User
                 $user = User::findOrFail($this->user_id);
                 $user->update($userData);
 
-                // Update Teacher
                 Teacher::where('id', $this->teacher_id)->update($teacherData);
 
                 session()->flash('success', 'Data guru berhasil diperbarui!');
             } else {
-                // Create User
                 $user = User::create($userData);
 
-                // Create Teacher
                 $teacherData['user_id'] = $user->id;
                 Teacher::create($teacherData);
 
                 session()->flash('success', 'Data guru berhasil ditambahkan!');
             }
 
-            DB::commit();
             $this->resetForm();
             $this->dispatch('closeModal');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
-        }
     }
 
     // Delete (Soft Delete)
@@ -201,30 +201,56 @@ class Index extends Component
         $this->teacher_id = $teacher->id;
         $this->user_id = $teacher->user_id;
         $this->name = $teacher->user->name;
-        
+
         $this->dispatch('openDeleteModal');
     }
 
     public function delete()
     {
-        try {
-            DB::beginTransaction();
 
             $teacher = Teacher::with('user')->findOrFail($this->teacher_id);
-
-            // Soft delete teacher (SoftDeletes trait)
             $teacher->delete();
 
-            // Optional: Soft delete user juga (kalau User model punya SoftDeletes)
-            // $teacher->user->delete();
-
-            DB::commit();
             session()->flash('success', 'Data guru berhasil dihapus!');
             $this->resetForm();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
+    }
+
+    public function exportPdf()
+    {
+        $query = Teacher::with('user');
+
+        if ($this->search) {
+            $query->whereHas('user', function ($q) {
+                $q->where('name', 'like', '%' . $this->search . '%')
+                    ->orWhere('username', 'like', '%' . $this->search . '%');
+            })->orWhere('nip', 'like', '%' . $this->search . '%');
         }
+
+        if ($this->filterGender) {
+            $query->whereHas('user', function ($q) {
+                $q->where('gender', $this->filterGender);
+            });
+        }
+
+        if ($this->filterStatus) {
+            $query->where('status', $this->filterStatus);
+        }
+
+        $teachers = $query->latest()->get()->toArray();
+
+        $pdf = Pdf::loadView('admin.teacher.print_pdf', [
+            'teachers' => $teachers
+        ])->setPaper('a4', 'portrait');
+
+        $fileName = 'data-guru-' . now()->format('Y-m-d-His') . '.pdf';
+
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->stream();
+        }, $fileName);
+    }
+    public function exportExcel()
+    {
+        return Excel::download(new TeacherExport, 'data-users.xlsx');
     }
 
     // Restore (kalau mau ada fitur restore)
@@ -233,7 +259,7 @@ class Index extends Component
         try {
             $teacher = Teacher::withTrashed()->findOrFail($id);
             $teacher->restore();
-            
+
             session()->flash('success', 'Data guru berhasil dipulihkan!');
         } catch (\Exception $e) {
             session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
@@ -272,10 +298,10 @@ class Index extends Component
             'total' => Teacher::count(),
             'aktif' => Teacher::where('status', 'active')->count(),
             'nonaktif' => Teacher::where('status', 'inactive')->count(),
-            'male' => Teacher::whereHas('user', function($q) {
+            'male' => Teacher::whereHas('user', function ($q) {
                 $q->where('gender', 'male');
             })->count(),
-            'female' => Teacher::whereHas('user', function($q) {
+            'female' => Teacher::whereHas('user', function ($q) {
                 $q->where('gender', 'female');
             })->count(),
         ];
@@ -285,14 +311,14 @@ class Index extends Component
     {
         $teachers = Teacher::with('user')
             ->when($this->search, function ($query) {
-                $query->whereHas('user', function($q) {
+                $query->whereHas('user', function ($q) {
                     $q->where('name', 'like', '%' . $this->search . '%')
-                      ->orWhere('username', 'like', '%' . $this->search . '%');
+                        ->orWhere('username', 'like', '%' . $this->search . '%');
                 })
-                ->orWhere('nip', 'like', '%' . $this->search . '%');
+                    ->orWhere('nip', 'like', '%' . $this->search . '%');
             })
             ->when($this->filterGender, function ($query) {
-                $query->whereHas('user', function($q) {
+                $query->whereHas('user', function ($q) {
                     $q->where('gender', $this->filterGender);
                 });
             })

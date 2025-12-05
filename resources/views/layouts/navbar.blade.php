@@ -31,12 +31,10 @@
                     
                     <!-- Menu Footer -->
                     <li class="user-footer d-flex justify-content-center">
-                      <form action="{{ route('logout') }}" method="POST" > 
-                           
-                        <button type="submit" class="btn btn-danger rounded">
+                      
+                        <a href="{{ route('logout') }}" class="btn btn-danger rounded">
                                 <i class="fas fa-sign-out-alt"></i> Logout
-                            </button>
-                      </form>
+                        </a>
                     </li>
                 </ul>
             </li>

@@ -12,12 +12,12 @@ class Trash extends Component
     use WithPagination;
 
     protected $paginationTheme = 'bootstrap';
-    
+
     public $search = '';
     public $selectedUsers = [];
     public $selectAll = false;
     public $bulkDisabled = true;
-    
+
     protected $listeners = ['refreshComponent' => '$refresh'];
 
     public function updatingSearch()
@@ -31,8 +31,8 @@ class Trash extends Component
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('name', 'like', '%' . $this->search . '%')
-                      ->orWhere('username', 'like', '%' . $this->search . '%')
-                      ->orWhere('role', 'like', '%' . $this->search . '%');
+                        ->orWhere('username', 'like', '%' . $this->search . '%')
+                        ->orWhere('role', 'like', '%' . $this->search . '%');
                 });
             })
             ->latest('deleted_at')
@@ -49,12 +49,12 @@ class Trash extends Component
             DB::transaction(function () use ($id) {
                 $user = User::onlyTrashed()->findOrFail($id);
                 $user->restore();
-                
+
                 // Restore related records
                 if ($user->student) {
                     $user->student()->onlyTrashed()->restore();
                 }
-                
+
                 if ($user->teacher) {
                     $user->teacher()->onlyTrashed()->restore();
                 }
@@ -64,7 +64,7 @@ class Trash extends Component
                 'type' => 'success',
                 'message' => 'User berhasil dipulihkan!'
             ]);
-            
+
             $this->reset(['selectedUsers', 'selectAll']);
         } catch (\Exception $e) {
             $this->dispatchBrowserEvent('notify', [
@@ -74,95 +74,70 @@ class Trash extends Component
         }
     }
 
-    public function forceDelete($id)
-    {
-        try {
-            DB::transaction(function () use ($id) {
-                $user = User::onlyTrashed()->findOrFail($id);
-                
-                // Force delete related records
-                if ($user->student) {
-                    $user->student()->forceDelete();
-                }
-                
-                if ($user->teacher) {
-                    $user->teacher()->forceDelete();
-                }
-                
-                // Delete profile image if exists
-                if ($user->profile) {
-                    $path = public_path('storage/' . $user->profile);
-                    if (file_exists($path)) {
-                        unlink($path);
-                    }
-                }
-                
-                $user->forceDelete();
-            });
+   public function forceDelete($id)
+{
+    $user = User::onlyTrashed()->findOrFail($id);
 
-            $this->dispatchBrowserEvent('notify', [
-                'type' => 'success',
-                'message' => 'User berhasil dihapus permanen!'
-            ]);
-            
-            $this->reset(['selectedUsers', 'selectAll']);
-        } catch (\Exception $e) {
-            $this->dispatchBrowserEvent('notify', [
-                'type' => 'error',
-                'message' => 'Gagal menghapus user: ' . $e->getMessage()
-            ]);
+    if ($user->student) {
+        // Hapus attendance dulu
+        $user->student->attendances()->forceDelete();
+
+        // Hapus student
+        $user->student()->forceDelete();
+    }
+
+    if ($user->teacher) {
+        $user->teacher()->forceDelete();
+    }
+
+    // Hapus foto
+    if ($user->profile) {
+        $path = public_path('storage/' . $user->profile);
+        if (file_exists($path)) {
+            unlink($path);
         }
     }
 
-    public function restoreSelected()
-    {
-        try {
-            DB::transaction(function () {
-                $users = User::onlyTrashed()->whereIn('id', $this->selectedUsers)->get();
-                
-                foreach ($users as $user) {
-                    $user->restore();
-                    
-                    if ($user->student) {
-                        $user->student()->onlyTrashed()->restore();
-                    }
-                    
-                    if ($user->teacher) {
-                        $user->teacher()->onlyTrashed()->restore();
-                    }
-                }
-            });
+    $user->forceDelete();
+}
 
-            $this->dispatchBrowserEvent('notify', [
-                'type' => 'success',
-                'message' => count($this->selectedUsers) . ' user berhasil dipulihkan!'
-            ]);
-            
-            $this->reset(['selectedUsers', 'selectAll']);
-        } catch (\Exception $e) {
-            $this->dispatchBrowserEvent('notify', [
-                'type' => 'error',
-                'message' => 'Gagal memulihkan user: ' . $e->getMessage()
-            ]);
+     public function restoreSelected()
+    {
+        $users = User::onlyTrashed()->whereIn('id', $this->selectedUsers)->get();
+
+        foreach ($users as $user) {
+            $user->restore();
+
+            if ($user->student) {
+                $user->student()->onlyTrashed()->restore();
+            }
+
+            if ($user->teacher) {
+                $user->teacher()->onlyTrashed()->restore();
+            }
         }
+
+        $this->dispatch('notify', type: 'success', message: 'Semua user terpilih berhasil direstore!');
+        $this->reset(['selectedUsers', 'selectAll']);
     }
+
 
     public function deleteSelected()
     {
         try {
             DB::transaction(function () {
                 $users = User::onlyTrashed()->whereIn('id', $this->selectedUsers)->get();
-                
+
                 foreach ($users as $user) {
                     // Force delete related records
                     if ($user->student) {
                         $user->student()->forceDelete();
                     }
-                    
+
                     if ($user->teacher) {
                         $user->teacher()->forceDelete();
                     }
-                    
+
                     // Delete profile image
                     if ($user->profile) {
                         $path = public_path('storage/' . $user->profile);
@@ -170,7 +145,7 @@ class Trash extends Component
                             unlink($path);
                         }
                     }
-                    
+
                     $user->forceDelete();
                 }
             });
@@ -179,7 +154,7 @@ class Trash extends Component
                 'type' => 'success',
                 'message' => count($this->selectedUsers) . ' user berhasil dihapus permanen!'
             ]);
-            
+
             $this->reset(['selectedUsers', 'selectAll']);
         } catch (\Exception $e) {
             $this->dispatchBrowserEvent('notify', [
@@ -196,8 +171,8 @@ class Trash extends Component
                 ->when($this->search, function ($query) {
                     $query->where(function ($q) {
                         $q->where('name', 'like', '%' . $this->search . '%')
-                          ->orWhere('username', 'like', '%' . $this->search . '%')
-                          ->orWhere('role', 'like', '%' . $this->search . '%');
+                            ->orWhere('username', 'like', '%' . $this->search . '%')
+                            ->orWhere('role', 'like', '%' . $this->search . '%');
                     });
                 })
                 ->pluck('id')

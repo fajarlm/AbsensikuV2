@@ -1,6 +1,7 @@
 <?php
 
-namespace App\Http\Livewire\StudyGroup;
+namespace App\Livewire\Admin\StudyGroup;
+
 
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -29,7 +30,7 @@ class Trash extends Component
             ->latest('deleted_at')
             ->paginate(10);
 
-        return view('livewire.study-group.trash', compact('studyGroups'));
+        return view('livewire.admin.study-group.trash' ,['studyGroups' => $studyGroups]);
     }
 
     public function restore($id)

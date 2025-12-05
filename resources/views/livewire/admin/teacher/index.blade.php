@@ -25,7 +25,21 @@
                 <p class="text-muted mb-0">Kelola data guru dan informasi kepegawaian</p>
             </div>
             <div class="">
-                <a href="{{ route('admin.teacher.trash') }}" class="btn btn-danger">
+                <div class="btn-group dropstart">
+                    <button type="button" class="btn btn-warning dropdown-toggle " data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                        <i class="fas fa-print"></i> Export
+                    </button>
+                    <div class="dropdown-menu">
+                        <button wire:click="exportExcel" href="" style="font-size: 18px"
+                            class=" text-success dropdown-item"><i class="fas fa-file-excel"></i>
+                            EXCEL</button>
+                        <button wire:click="exportPdf" style="font-size: 18px" class=" text-danger dropdown-item"><i
+                                class="fas fa-file-pdf"></i>
+                            PDF</button>
+                    </div>
+                </div>
+                <a href="{{ route('admin.user.teacher.trash') }}" class="btn btn-danger">
                     <i class="bi bi-trash me-1"></i> Data Sampah
                 </a>
                 <button wire:click="create" class="btn btn-primary" data-bs-toggle="modal"

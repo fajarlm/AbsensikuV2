@@ -2,20 +2,24 @@
 
 namespace App\Livewire\Admin\User;
 
+use App\Models\User;
 use Livewire\Component;
+use App\Exports\UserExport;
 use Livewire\WithPagination;
 use Livewire\WithFileUploads;
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Hash;
+use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Storage;
 
 class Index extends Component
 {
     use WithPagination, WithFileUploads;
 
     protected $paginationTheme = 'bootstrap';
-    
+
     // Filter properties
     public $search = '';
     public $filterRole = '';
@@ -32,7 +36,7 @@ class Index extends Component
     public $gender;
     public $profile;
     public $old_profile;
-    
+
     // Modal state
     public $isEdit = false;
 
@@ -98,97 +102,78 @@ class Index extends Component
 
     public function edit($id)
     {
-        try {
-            $user = User::findOrFail($id);
-            
-            $this->user_id = $user->id;
-            $this->name = $user->name;
-            $this->username = $user->username;
-            $this->role = $user->role;
-            $this->gender = $user->gender;
-            $this->old_profile = $user->profile;
-            
-            // Reset password fields saat edit
-            $this->password = '';
-            $this->password_confirmation = '';
-            
-            $this->isEdit = true;
-            $this->dispatch('open-modal', modal: 'userModal');
-        } catch (\Exception $e) {
-            session()->flash('error', 'User tidak ditemukan!');
-        }
+        $user = User::findOrFail($id);
+
+        $this->user_id = $user->id;
+        $this->name = $user->name;
+        $this->username = $user->username;
+        $this->role = $user->role;
+        $this->gender = $user->gender;
+        $this->old_profile = $user->profile;
+
+        // Reset password fields saat edit
+        $this->password = '';
+        $this->password_confirmation = '';
+
+        $this->isEdit = true;
+        $this->dispatch('open-modal', modal: 'userModal');
     }
 
     public function save()
     {
         $this->validate();
 
-        try {
-            $data = [
-                'name' => $this->name,
-                'username' => $this->username,
-                'role' => $this->role,
-                'gender' => $this->gender,
-            ];
+        $data = [
+            'name' => $this->name,
+            'username' => $this->username,
+            'role' => $this->role,
+            'gender' => $this->gender,
+        ];
 
-            // Handle password
-            if (!$this->isEdit && $this->password) {
-                $data['password'] = Hash::make($this->password);
-            } elseif ($this->isEdit && $this->password) {
-                $data['password'] = Hash::make($this->password);
-            }
-
-            // Handle file upload
-            if ($this->profile) {
-                // Delete old profile if exists and is being replaced
-                if ($this->isEdit && $this->old_profile) {
-                    Storage::disk('public')->delete($this->old_profile);
-                }
-                $data['profile'] = $this->profile->store('profiles', 'public');
-            }
-
-            if ($this->isEdit) {
-                $user = User::findOrFail($this->user_id);
-                $user->update($data);
-                session()->flash('success', 'User berhasil diperbarui!');
-            } else {
-                User::create($data);
-                session()->flash('success', 'User berhasil ditambahkan!');
-            }
-
-            $this->resetForm();
-            $this->dispatch('close-modal', modal: 'userModal');
-        } catch (\Exception $e) {
-            session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        if (!$this->isEdit && $this->password) {
+            $data['password'] = Hash::make($this->password);
+        } elseif ($this->isEdit && $this->password) {
+            $data['password'] = Hash::make($this->password);
         }
+
+        if ($this->profile) {
+            if ($this->isEdit && $this->old_profile) {
+                Storage::disk('public')->delete($this->old_profile);
+            }
+            $data['profile'] = $this->profile->store('profiles', 'public');
+        }
+
+        if ($this->isEdit) {
+            $user = User::findOrFail($this->user_id);
+            $user->update($data);
+            session()->flash('success', 'User berhasil diperbarui!');
+        } else {
+            User::create($data);
+            session()->flash('success', 'User berhasil ditambahkan!');
+        }
+
+        $this->resetForm();
+        $this->dispatch('close-modal', modal: 'userModal');
     }
 
     public function confirmDelete($id)
     {
-        try {
-            $user = User::withTrashed()->findOrFail($id);
-            $this->user_id = $user->id;
-            $this->name = $user->name;
-            $this->dispatch('open-modal', modal: 'deleteModal');
-        } catch (\Exception $e) {
-            session()->flash('error', 'User tidak ditemukan!');
-        }
+        $user = User::withTrashed()->findOrFail($id);
+        $this->user_id = $user->id;
+        $this->name = $user->name;
+        $this->dispatch('open-modal', modal: 'deleteModal');
     }
 
     public function delete()
     {
-        try {
-            $user = User::findOrFail($this->user_id);
-            
-            // Soft delete user (akan otomatis soft delete related data jika ada cascade)
-            $user->delete();
-            
-            session()->flash('success', 'User berhasil dihapus dan dipindahkan ke sampah!');
-            $this->resetForm();
-            $this->dispatch('close-modal', modal: 'deleteModal');
-        } catch (\Exception $e) {
-            session()->flash('error', 'Gagal menghapus user: ' . $e->getMessage());
-        }
+        $user = User::findOrFail($this->user_id);
+
+        // Soft delete user (akan otomatis soft delete related data jika ada cascade)
+        $user->delete();
+
+        session()->flash('success', 'User berhasil dihapus dan dipindahkan ke sampah!');
+        $this->resetForm();
+        $this->dispatch('close-modal', modal: 'deleteModal');
     }
 
     public function resetForm()
@@ -206,13 +191,41 @@ class Index extends Component
         $this->resetValidation();
     }
 
+   public function exportPdf()
+{
+    $query = User::with(['student.studyGroup', 'teacher.subjects']);
+    
+    if ($this->filterRole) {
+        $query->where('role', $this->filterRole);
+    }
+    
+    $users = $query->latest()->get()->toArray();
+    $role = $this->filterRole ?: null;
+    
+    $pdf = Pdf::loadView('admin.user.print_pdf', [
+        'users' => $users,
+        'role' => $role
+    ])->setPaper('a4', 'landscape');    
+    
+    $fileName = 'data-users-' . ($role ?: 'all') . '-' . now()->format('Y-m-d') . '.pdf';
+    
+    return response()->streamDownload(function () use ($pdf) {
+        echo $pdf->stream();
+    }, $fileName);
+}   
+
+    public function exportExcel()
+    {
+        return Excel::download(new UserExport, 'data-users.xlsx');
+    }
+
     public function render()
     {
         // Query dengan filter (hanya data yang tidak dihapus)
         $query = User::query()
             ->when($this->search, function ($q) {
                 $q->where('name', 'like', '%' . $this->search . '%')
-                  ->orWhere('username', 'like', '%' . $this->search . '%');
+                    ->orWhere('username', 'like', '%' . $this->search . '%');
             })
             ->when($this->filterRole, function ($q) {
                 $q->where('role', $this->filterRole);

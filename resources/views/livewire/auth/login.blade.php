@@ -1,13 +1,21 @@
 <div>
+
     @if (Session::get('success'))
-        <div class="alert alert-success alert-dismissible absolute fade show shadow-lg rounded-3 mt-4" role="alert"
-            style="font-size: 1rem; border-left: 6px solid #28a745;" id="alert">
+        <div class="alert alert-success alert-dismissible fade show shadow-lg rounded-3" role="alert" id="alert"
+            style="
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        font-size: 1rem;
+        border-left: 6px solid #28a745;
+        z-index: 9999;
+        min-width: 280px; ">
+
             <i class="fas fa-check-circle me-2"></i>
             {{ Session::get('success') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
-
     <div class="d-flex justify-content-start align-items-center"
         style="min-height: 100vh; background:url('{{ asset('https://wallpapers.com/images/featured/school-background-fvzmkdcjswmjz5y7.jpg') }}'); background-size:cover; background-position:center;">
 
@@ -36,13 +44,13 @@
                         </span>
                     </div>
 
-                    
-                    
-                    
+
+
+
                     <button type="submit" class="btn btn-primary w-100">Login</button>
-                    
+
                     @if (session('error'))
-                    <div class="alert alert-danger mt-3 mb-0">{{ session('error') }}</div>
+                        <div class="alert alert-danger mt-3 mb-0">{{ session('error') }}</div>
                     @endif
                 </form>
                 <div class="d-flex justify-content-center align-items-center mt-4">

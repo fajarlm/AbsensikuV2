@@ -12,8 +12,8 @@ class Attendance extends Model
 
     protected $fillable = [
         'student_id',
-        'subject_id',
-        'date',
+        'schedule_id',
+        'attendance_date',
         'status',
         'note',
     ];
@@ -31,8 +31,8 @@ class Attendance extends Model
      * Relasi ke Subject
      * Satu attendance record nyambung ke satu subject
      */
-    public function schdule()
+    public function schedule()
     {
-        return $this->belongsTo(Subject::class);
+        return $this->belongsTo(Schedule::class);
     }
 }

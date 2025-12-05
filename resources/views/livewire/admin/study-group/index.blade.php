@@ -23,9 +23,24 @@
                 <p class="text-muted mb-0">Kelola data kelas dan rombongan belajar</p>
             </div>
             <div class="">
-                <a href="{{ route('admin.study_group.trash') }}" class="btn btn-danger me-2">
-                    <i class="bi bi-trash me-1"></i> Data Sampah
-                </a>
+                <div class="btn-group dropstart">
+                    <button type="button" class="btn btn-warning dropdown-toggle " data-bs-toggle="dropdown"
+                    aria-expanded="false">
+                        <i class="fas fa-print"></i> Export
+                    </button>
+                    <div class="dropdown-menu">
+                        <button wire:click="exportExcel" href="" style="font-size: 18px"
+                            class=" text-success dropdown-item"><i class="fas fa-file-excel"></i>
+                            EXCEL</button>
+                        <button href="exportPdf" style="font-size: 18px" class=" text-danger dropdown-item"><i
+                            class="fas fa-file-pdf"></i>
+                            PDF</button>
+                        </div>
+                    </div>
+                    <a href="{{ route('admin.study_group.trash') }}" class="btn btn-danger me-2">
+                        <i class="bi bi-trash"></i> Data Sampah
+                    </a>
+
                 <button wire:click="create" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#groupModal">
                     <i class="bi bi-plus-circle me-1"></i> Tambah Kelas
                 </button>
@@ -141,12 +156,13 @@
                                     <td>{{ $group->students_count ?? $group->students()->count() }} siswa</td>
                                     <td>{{ $group->created_at->format('d M Y') }}</td>
                                     <td class="text-center">
-                                        <button wire:click="edit({{ $group->id }})"
-                                            class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#groupModal">
+                                        <button wire:click="edit({{ $group->id }})" class="btn btn-sm btn-info"
+                                            data-bs-toggle="modal" data-bs-target="#groupModal">
                                             <i class="bi bi-pencil-square"></i>
                                         </button>
                                         <button wire:click="deleteConfirm({{ $group->id }})"
-                                            class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                            class="btn btn-sm btn-danger" data-bs-toggle="modal"
+                                            data-bs-target="#deleteModal">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </td>
@@ -165,7 +181,8 @@
 
                 <div class="d-flex justify-content-between align-items-center mt-3">
                     <div class="text-muted small">
-                        Menampilkan {{ $groups->firstItem() ?? 0 }} - {{ $groups->lastItem() ?? 0 }} dari {{ $groups->total() }} data
+                        Menampilkan {{ $groups->firstItem() ?? 0 }} - {{ $groups->lastItem() ?? 0 }} dari
+                        {{ $groups->total() }} data
                     </div>
                     {{ $groups->links() }}
                 </div>
@@ -182,7 +199,8 @@
                         <i class="bi {{ $isEdit ? 'bi-pencil-square' : 'bi-plus-circle' }} me-2"></i>
                         {{ $isEdit ? 'Edit Kelas' : 'Tambah Kelas' }}
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" wire:click="resetForm"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        wire:click="resetForm"></button>
                 </div>
                 <form wire:submit.prevent="save">
                     <div class="modal-body">
@@ -195,7 +213,9 @@
                                     <option value="XI">XI</option>
                                     <option value="XII">XII</option>
                                 </select>
-                                @error('grade') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                @error('grade')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Jurusan <span class="text-danger">*</span></label>
@@ -209,22 +229,28 @@
                                     <option value="KLN">KLN</option>
                                     <option value="HTL">HTL</option>
                                 </select>
-                                @error('major') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                @error('major')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Nomor Kelas <span class="text-danger">*</span></label>
-                                <select wire:model="class_number" class="form-select @error('class_number') is-invalid @enderror">
+                                <select wire:model="class_number"
+                                    class="form-select @error('class_number') is-invalid @enderror">
                                     <option value="">Pilih Nomor</option>
-                                    @for($i=1; $i<=6; $i++)
+                                    @for ($i = 1; $i <= 6; $i++)
                                         <option value="{{ $i }}">{{ $i }}</option>
                                     @endfor
                                 </select>
-                                @error('class_number') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                @error('class_number')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" wire:click="resetForm">Batal</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                            wire:click="resetForm">Batal</button>
                         <button type="submit" class="btn btn-primary" wire:loading.attr="disabled">
                             <span wire:loading.remove wire:target="save">Simpan</span>
                             <span wire:loading wire:target="save">

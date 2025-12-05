@@ -4,7 +4,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h1 class="h3 mb-0 text-gray-800">
-                    <i class="fas fa-trash-alt text-danger mr-2"></i>Trash User
+                    <i class="fas fa-trash-alt text-danger mr-2"></i> Trash User
                 </h1>
                 <p class="mb-0">User yang telah dihapus</p>
             </div>
@@ -91,9 +91,9 @@
                                                     <strong>{{ $user->name }}</strong>
                                                     <div class="text-muted small">
                                                         @if ($user->student)
-                                                            <span class="badge badge-info">Siswa</span>
+                                                            <span class="badge rounded-pill bg-info">Siswa</span>
                                                         @elseif($user->teacher)
-                                                            <span class="badge badge-warning">Guru</span>
+                                                            <span class="badge rounded-pill bg-warning">Guru</span>
                                                         @endif
                                                     </div>
                                                 </div>
@@ -103,22 +103,17 @@
                                         <td>
                                             <span
                                                 class="badge 
-                                                @if ($user->role == 'admin') badge-danger
-                                                @elseif($user->role == 'teacher') badge-warning
-                                                @else badge-primary @endif">
+                                                @if ($user->role == 'admin') bg-danger
+                                                @elseif($user->role == 'teacher') bg-warning
+                                                @else bg-primary @endif">
                                                 {{ ucfirst($user->role) }}
                                             </span>
                                         </td>
                                         <td>
-                                            @if ($user->gender)
-                                                <span
-                                                    class="badge 
-                                                    @if ($user->gender == 'male') badge-primary
-                                                    @else badge-pink @endif">
-                                                    {{ $user->gender == 'male' ? 'Laki-laki' : 'Perempuan' }}
-                                                </span>
+                                            @if ($user->gender == 'male')
+                                                <span class="badge rounded-pill bg-primary">Laki-laki </span>
                                             @else
-                                                <span class="text-muted">-</span>
+                                                <span class="badge rounded-pill bg-danger">Perempuan</span>
                                             @endif
                                         </td>
                                         <td>

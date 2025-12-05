@@ -37,15 +37,6 @@ class Login extends Component
         }
     }
 
-    public function logout()
-    {
-        Auth::logout();
-        session()->invalidate();
-        session()->regenerateToken();
-
-        return redirect()->route('login');
-    }
-
     public function render()
     {
         // return view('livewire.auth.login', ['title' => 'Login'])->layout('layouts.auth'); 

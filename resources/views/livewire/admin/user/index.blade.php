@@ -15,8 +15,21 @@
                 <p class="text-muted mb-0">Kelola semua pengguna sistem</p>
             </div>
             <div class="">
-
-                <a  href="{{ route('admin.user.trash') }}" class="btn btn-danger">
+                <div class="btn-group dropstart">
+                    <button type="button" class="btn btn-warning dropdown-toggle " data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                        <i class="fas fa-print"></i> Export
+                    </button>
+                    <div class="dropdown-menu">
+                        <button wire:click="exportExcel" href="" style="font-size: 18px"
+                            class=" text-success dropdown-item"><i class="fas fa-file-excel"></i>
+                            EXCEL</button>
+                        <button wire:click="exportPdf" style="font-size: 18px" class=" text-danger dropdown-item"><i
+                                class="fas fa-file-pdf"></i>
+                            PDF</button>
+                    </div>
+                </div>
+                <a href="{{ route('admin.user.trash') }}" class="btn btn-danger">
                     <i class="bi bi-trash me-1"></i> Data Sampah
                 </a>
                 <button class="btn btn-primary" wire:click="create" data-bs-toggle="modal" data-bs-target="#userModal">
@@ -160,14 +173,13 @@
                                     <td>{{ $users->firstItem() + $index }}</td>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            @if($item->profile)
-                                                <img src="{{ asset('storage/' . $item->profile) }}" 
-                                                     class="rounded-circle me-2" 
-                                                     width="32" height="32" 
-                                                     style="object-fit: cover;">
+                                            @if ($item->profile)
+                                                <img src="{{ asset('storage/' . $item->profile) }}"
+                                                    class="rounded-circle me-2" width="32" height="32"
+                                                    style="object-fit: cover;">
                                             @else
-                                                <div class="bg-secondary rounded-circle me-2 d-flex align-items-center justify-content-center" 
-                                                     style="width: 32px; height: 32px;">
+                                                <div class="bg-secondary rounded-circle me-2 d-flex align-items-center justify-content-center"
+                                                    style="width: 32px; height: 32px;">
                                                     <i class="bi bi-person text-white"></i>
                                                 </div>
                                             @endif
@@ -193,12 +205,13 @@
                                     </td>
                                     <td>{{ $item->created_at->format('d M Y') }}</td>
                                     <td class="text-center">
-                                        <button wire:click="edit({{ $item->id }})" data-bs-toggle="modal" data-bs-target="#userModal" 
-                                                class="btn btn-sm btn-info">
+                                        <button wire:click="edit({{ $item->id }})" data-bs-toggle="modal"
+                                            data-bs-target="#userModal" class="btn btn-sm btn-info">
                                             <i class="bi bi-pencil-square"></i>
                                         </button>
-                                        <button data-bs-toggle="modal" data-bs-target="#deleteModal" wire:click="confirmDelete({{ $item->id }})" 
-                                                class="btn btn-sm btn-danger">
+                                        <button data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                            wire:click="confirmDelete({{ $item->id }})"
+                                            class="btn btn-sm btn-danger">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </td>
@@ -218,7 +231,7 @@
                 <!-- Pagination -->
                 <div class="d-flex justify-content-between align-items-center mt-3">
                     <div class="text-muted small">
-                        Menampilkan {{ $users->firstItem() ?? 0 }} - {{ $users->lastItem() ?? 0 }} 
+                        Menampilkan {{ $users->firstItem() ?? 0 }} - {{ $users->lastItem() ?? 0 }}
                         dari {{ $users->total() }} data
                     </div>
                     <div>
@@ -238,8 +251,8 @@
                         <i class="bi {{ $isEdit ? 'bi-pencil-square' : 'bi-plus-circle' }} me-2"></i>
                         {{ $isEdit ? 'Edit User' : 'Tambah User Baru' }}
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" 
-                            wire:click="resetForm"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        wire:click="resetForm"></button>
                 </div>
                 <form wire:submit.prevent="save">
                     <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
@@ -247,9 +260,9 @@
                             <!-- Name -->
                             <div class="col-md-6">
                                 <label class="form-label">Nama Lengkap <span class="text-danger">*</span></label>
-                                <input type="text" wire:model="name" 
-                                       class="form-control @error('name') is-invalid @enderror"
-                                       placeholder="Masukkan nama lengkap">
+                                <input type="text" wire:model="name"
+                                    class="form-control @error('name') is-invalid @enderror"
+                                    placeholder="Masukkan nama lengkap">
                                 @error('name')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -258,9 +271,9 @@
                             <!-- Username -->
                             <div class="col-md-6">
                                 <label class="form-label">Username <span class="text-danger">*</span></label>
-                                <input type="text" wire:model="username" 
-                                       class="form-control @error('username') is-invalid @enderror"
-                                       placeholder="Masukkan username">
+                                <input type="text" wire:model="username"
+                                    class="form-control @error('username') is-invalid @enderror"
+                                    placeholder="Masukkan username">
                                 @error('username')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -277,9 +290,9 @@
                                         <small class="text-muted">(Kosongkan jika tidak diubah)</small>
                                     @endif
                                 </label>
-                                <input type="password" wire:model="password" 
-                                       class="form-control @error('password') is-invalid @enderror"
-                                       placeholder="Masukkan password">
+                                <input type="password" wire:model="password"
+                                    class="form-control @error('password') is-invalid @enderror"
+                                    placeholder="Masukkan password">
                                 @error('password')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -289,9 +302,9 @@
                             <!-- Password Confirmation -->
                             <div class="col-md-6">
                                 <label class="form-label">Konfirmasi Password</label>
-                                <input type="password" wire:model="password_confirmation" 
-                                       class="form-control @error('password_confirmation') is-invalid @enderror"
-                                       placeholder="Konfirmasi password">
+                                <input type="password" wire:model="password_confirmation"
+                                    class="form-control @error('password_confirmation') is-invalid @enderror"
+                                    placeholder="Konfirmasi password">
                                 @error('password_confirmation')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -300,8 +313,7 @@
                             <!-- Role -->
                             <div class="col-md-6">
                                 <label class="form-label">Role <span class="text-danger">*</span></label>
-                                <select wire:model="role" 
-                                        class="form-select @error('role') is-invalid @enderror">
+                                <select wire:model="role" class="form-select @error('role') is-invalid @enderror">
                                     <option value="">Pilih Role</option>
                                     <option value="admin">Admin</option>
                                     <option value="teacher">Guru</option>
@@ -315,8 +327,7 @@
                             <!-- Gender -->
                             <div class="col-md-6">
                                 <label class="form-label">Jenis Kelamin <span class="text-danger">*</span></label>
-                                <select wire:model="gender" 
-                                        class="form-select @error('gender') is-invalid @enderror">
+                                <select wire:model="gender" class="form-select @error('gender') is-invalid @enderror">
                                     <option value="">Pilih Jenis Kelamin</option>
                                     <option value="male">Laki-laki</option>
                                     <option value="female">Perempuan</option>
@@ -329,9 +340,8 @@
                             <!-- Profile Photo -->
                             <div class="col-12">
                                 <label class="form-label">Foto Profil</label>
-                                <input type="file" wire:model="profile" 
-                                       class="form-control @error('profile') is-invalid @enderror" 
-                                       accept="image/*">
+                                <input type="file" wire:model="profile"
+                                    class="form-control @error('profile') is-invalid @enderror" accept="image/*">
                                 @error('profile')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -340,11 +350,11 @@
                                 <!-- Preview -->
                                 <div class="mt-2">
                                     @if ($profile)
-                                        <img src="{{ $profile->temporaryUrl() }}" 
-                                             class="img-thumbnail" width="100">
+                                        <img src="{{ $profile->temporaryUrl() }}" class="img-thumbnail"
+                                            width="100">
                                     @elseif($old_profile)
-                                        <img src="{{ asset('storage/' . $old_profile) }}" 
-                                             class="img-thumbnail" width="100">
+                                        <img src="{{ asset('storage/' . $old_profile) }}" class="img-thumbnail"
+                                            width="100">
                                     @endif
                                 </div>
 
@@ -355,8 +365,8 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" 
-                                data-bs-dismiss="modal" wire:click="resetForm">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                            wire:click="resetForm">
                             Batal
                         </button>
                         <button type="submit" class="btn btn-primary" wire:loading.attr="disabled">
@@ -382,8 +392,7 @@
                     <h5 class="modal-title">
                         <i class="bi bi-exclamation-triangle me-2"></i>Konfirmasi Hapus
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" 
-                            data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <p class="mb-0">Apakah Anda yakin ingin menghapus user <strong>{{ $name }}</strong>?</p>
@@ -404,19 +413,19 @@
     </div>
 
     @push('scripts')
-    <script>
-        // Handle modal open/close
-        window.addEventListener('open-modal', event => {
-            const modal = new bootstrap.Modal(document.getElementById(event.detail.modal));
-            modal.show();
-        });
+        <script>
+            // Handle modal open/close
+            window.addEventListener('open-modal', event => {
+                const modal = new bootstrap.Modal(document.getElementById(event.detail.modal));
+                modal.show();
+            });
 
-        window.addEventListener('close-modal', event => {
-            const modal = bootstrap.Modal.getInstance(document.getElementById(event.detail.modal));
-            if (modal) {
-                modal.hide();
-            }
-        });
-    </script>
+            window.addEventListener('close-modal', event => {
+                const modal = bootstrap.Modal.getInstance(document.getElementById(event.detail.modal));
+                if (modal) {
+                    modal.hide();
+                }
+            });
+        </script>
     @endpush
 </div>

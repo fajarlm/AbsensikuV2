@@ -14,10 +14,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
 
         // $middleware->group('web', [
-            
+
         //     \Livewire\Features\SupportNavigate\Middleware::class,
         // ]);
-        
+
+        // $middleware->append(\App\Http\Middleware\FixUtf8::class);
+
         $middleware->alias([
             'isAdmin' => App\Http\Middleware\isAdmin::class,
             'isTeacher' => App\Http\Middleware\isTeacher::class,

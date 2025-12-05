@@ -3,16 +3,19 @@
 
 namespace App\Livewire\Admin\Student;
 
+use App\Exports\StudentExport;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\WithFileUploads;
 use App\Models\User;
 use App\Models\Student;
 use App\Models\StudyGroup;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Facades\Excel;
 
 class Index extends Component
 {
@@ -20,15 +23,12 @@ class Index extends Component
 
     protected $paginationTheme = 'bootstrap';
 
-    // Filter properties
     public $search = '';
-    public $filterStatus = '';
     public $filterGender = '';
     public $filterGrade = '';
     public $filterMajor = '';
     public $perPage = 10;
 
-    // Form properties - User
     public $student_id;
     public $user_id;
     public $name;
@@ -38,17 +38,13 @@ class Index extends Component
     public $gender;
     public $profile;
     public $oldProfile;
-
-    // Form properties - Student
+    public $nisn;
+    
     public $nis;
     public $study_group_id;
-    public $status = 'active';
-    public $entry_year;
-
-    // Modal state
     public $isEdit = false;
 
-    // Study groups for dropdown
+    // buat drpdown
     public $studyGroups = [];
 
     public function mount()
@@ -57,8 +53,9 @@ class Index extends Component
             ->orderBy('major')
             ->orderBy('class_number')
             ->get();
-        $this->entry_year = date('Y');
     }
+
+
 
     protected function rules()
     {
@@ -68,7 +65,6 @@ class Index extends Component
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('users')->ignore($this->user_id)
             ],
             'gender' => 'required|in:male,female',
             'profile' => 'nullable|image|max:2048',
@@ -76,11 +72,9 @@ class Index extends Component
                 'required',
                 'string',
                 'max:50',
-                Rule::unique('students')->ignore($this->student_id)
             ],
-            'study_group_id' => 'nullable|exists:study_groups,id',
-            'status' => 'required|in:active,inactive,graduated,dropped_out',
-            'entry_year' => 'required|digits:4|integer|min:2000|max:' . (date('Y') + 1),
+            'nisn' => 'required|string|max:50',
+            'study_group_id' => 'required|exists:study_groups,id',
         ];
 
         if (!$this->isEdit) {
@@ -102,9 +96,7 @@ class Index extends Component
         'gender.required' => 'Jenis kelamin wajib dipilih',
         'nis.required' => 'NIS wajib diisi',
         'nis.unique' => 'NIS sudah digunakan',
-        'status.required' => 'Status wajib dipilih',
-        'entry_year.required' => 'Tahun masuk wajib diisi',
-        'entry_year.digits' => 'Tahun masuk harus 4 digit',
+        'nisn.required' => 'NISN wajib diisi',
         'profile.image' => 'File harus berupa gambar',
         'profile.max' => 'Ukuran gambar maksimal 2MB',
     ];
@@ -114,10 +106,6 @@ class Index extends Component
         $this->resetPage();
     }
 
-    public function updatingFilterStatus()
-    {
-        $this->resetPage();
-    }
 
     public function updatingFilterGender()
     {
@@ -153,75 +141,75 @@ class Index extends Component
 
         $this->nis = $student->nis;
         $this->study_group_id = $student->study_group_id;
-        $this->status = $student->status;
-        $this->entry_year = $student->entry_year;
 
         $this->isEdit = true;
+    }
+
+    public function exportPdf()
+    {
+        $Student = Student::all();
+        view()->share('Student', $Student);
+        $pdf = Pdf::loadView('admin.user.print_pdf', $Student);
+        $fileName = 'data-Siswa' . \Carbon\Carbon::now()->timestamp . '.pdf';
+        return $pdf->download($fileName);
+    }
+
+
+    public function exportExcel()
+    {
+        return Excel::download(new StudentExport, 'data-Student.xlsx');
     }
 
     public function save()
     {
         $this->validate();
 
-        DB::beginTransaction();
-        try {
-            // Data User
-            $userData = [
-                'name' => $this->name,
-                'username' => $this->username,
-                'role' => 'student',
-                'gender' => $this->gender,
-            ];
+        $userData = [
+            'name' => $this->name,
+            'username' => $this->username,
+            'role' => 'student',
+            'gender' => $this->gender,
+        ];
 
-            // Handle password
-            if (!$this->isEdit) {
-                $userData['password'] = Hash::make($this->password);
-            } elseif ($this->password) {
-                $userData['password'] = Hash::make($this->password);
-            }
-
-            // Handle file upload
-            if ($this->profile) {
-                if ($this->isEdit && $this->oldProfile) {
-                    Storage::disk('public')->delete($this->oldProfile);
-                }
-                $userData['profile'] = $this->profile->store('profiles', 'public');
-            }
-
-            // Save or Update User
-            if ($this->isEdit) {
-                $user = User::find($this->user_id);
-                $user->update($userData);
-            } else {
-                $user = User::create($userData);
-            }
-
-            // Data Student
-            $studentData = [
-                'user_id' => $user->id,
-                'nis' => $this->nis,
-                'study_group_id' => $this->study_group_id,
-                'status' => $this->status,
-                'entry_year' => $this->entry_year,
-            ];
-
-            // Save or Update Student
-            if ($this->isEdit) {
-                Student::find($this->student_id)->update($studentData);
-                session()->flash('success', 'Data siswa berhasil diperbarui!');
-            } else {
-                Student::create($studentData);
-                session()->flash('success', 'Data siswa berhasil ditambahkan!');
-            }
-
-            DB::commit();
-            $this->resetForm();
-            $this->dispatch('close-modal');
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        if (!$this->isEdit) {
+            $userData['password'] = Hash::make($this->password);
+        } elseif ($this->password) {
+            $userData['password'] = Hash::make($this->password);
         }
+
+        if ($this->profile) {
+            if ($this->isEdit && $this->oldProfile) {
+                Storage::disk('public')->delete($this->oldProfile);
+            }
+            $userData['profile'] = $this->profile->store('profiles', 'public');
+        }
+
+        if ($this->isEdit) {
+            $user = User::find($this->user_id);
+            $user->update($userData);
+        } else {
+            $user = User::create($userData);
+        }
+
+        $studentData = [
+            'user_id' => $user->id,
+            'nis' => $this->nis,
+            'study_group_id' => $this->study_group_id,
+            'verification_code' => $this->nis,
+            'nisn' => $this->nisn,
+            'first_log' => 0
+        ];
+
+        if ($this->isEdit) {
+            Student::find($this->student_id)->update($studentData);
+            session()->flash('success', 'Data siswa berhasil diperbarui!');
+        } else {
+            Student::create($studentData);
+            session()->flash('success', 'Data siswa berhasil ditambahkan!');
+        }
+
+        $this->resetForm();
+        $this->dispatch('close-modal');
     }
 
     public function deleteConfirm($id)
@@ -234,25 +222,18 @@ class Index extends Component
 
     public function delete()
     {
-        try {
-            $student = Student::findOrFail($this->student_id);
-            $user = User::findOrFail($this->user_id);
+        $student = Student::findOrFail($this->student_id);
+        $user = User::findOrFail($this->user_id);
 
-            // Delete profile image if exists
-            if ($user->profile) {
-                Storage::disk('public')->delete($user->profile);
-            }
-
-            // Soft delete student and user
-            $student->delete();
-            $user->delete();
-
-            session()->flash('success', 'Data siswa berhasil dihapus!');
-            $this->resetForm();
-
-        } catch (\Exception $e) {
-            session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        if ($user->profile) {
+            Storage::disk('public')->delete($user->profile);
         }
+
+        $student->delete();
+        $user->delete();
+
+        session()->flash('success', 'Data siswa berhasil dihapus!');
+        $this->resetForm();
     }
 
     public function resetForm()
@@ -269,8 +250,6 @@ class Index extends Component
 
         $this->nis = '';
         $this->study_group_id = null;
-        $this->status = 'active';
-        $this->entry_year = date('Y');
 
         $this->resetValidation();
     }
@@ -283,15 +262,12 @@ class Index extends Component
                     $query->where('name', 'like', '%' . $this->search . '%')
                         ->orWhere('username', 'like', '%' . $this->search . '%');
                 })
-                ->when($this->filterGender, function ($query) {
-                    $query->where('gender', $this->filterGender);
-                });
+                    ->when($this->filterGender, function ($query) {
+                        $query->where('gender', $this->filterGender);
+                    });
             })
             ->when($this->search, function ($query) {
                 $query->orWhere('nis', 'like', '%' . $this->search . '%');
-            })
-            ->when($this->filterStatus, function ($query) {
-                $query->where('status', $this->filterStatus);
             })
             ->when($this->filterGrade, function ($query) {
                 $query->whereHas('studyGroup', function ($q) {
@@ -307,22 +283,19 @@ class Index extends Component
 
         $students = $query->paginate($this->perPage);
 
-        // Statistics
         $allStudents = Student::with('user')->get();
+
+
         $stats = [
-            'total' => $allStudents->count(),
-            'active' => $allStudents->where('status', 'active')->count(),
-            'male' => $allStudents->filter(function ($student) {
-                return $student->user->gender == 'male';
-            })->count(),
-            'female' => $allStudents->filter(function ($student) {
-                return $student->user->gender == 'female';
-            })->count(),
+            'total'  => Student::count(),
+            'male'   => Student::whereHas('user', fn($q) => $q->where('gender', 'male'))->count(),
+            'female' => Student::whereHas('user', fn($q) => $q->where('gender', 'female'))->count(),
         ];
 
         return view('livewire.admin.student.index', [
             'students' => $students,
             'stats' => $stats,
+            'StudyGroups' => StudyGroup::all(),
         ]);
     }
 }

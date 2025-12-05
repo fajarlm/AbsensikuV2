@@ -5,7 +5,7 @@
             <p class="text-muted mb-0">Selamat datang, {{ auth()->user()->name }}</p>
         </div>
         <div class="text-muted">
-            <i class="bi bi-calendar3"></i> {{ now()->format('l, d F Y') }}
+            <i class="bi bi-calendar3"></i> {{ now()->locale('id')->isoFormat('dddd, D MMMM YYYY') }}
         </div>
     </div>
 
@@ -23,7 +23,7 @@
                         </div>
                         <div class="flex-grow-1 ms-3">
                             <h6 class="text-muted mb-1">Total Siswa</h6>
-                            <h3 class="mb-0">{{ \App\Models\Student::count() }}</h3>
+                            <h3 class="mb-0">{{ $totalStudents }}</h3>
                         </div>
                     </div>
                 </div>
@@ -47,7 +47,7 @@
                         </div>
                         <div class="flex-grow-1 ms-3">
                             <h6 class="text-muted mb-1">Total Guru</h6>
-                            <h3 class="mb-0">{{ \App\Models\Teacher::count() }}</h3>
+                            <h3 class="mb-0">{{ $totalTeachers }}</h3>
                         </div>
                     </div>
                 </div>
@@ -71,7 +71,7 @@
                         </div>
                         <div class="flex-grow-1 ms-3">
                             <h6 class="text-muted mb-1">Total Kelas</h6>
-                            <h3 class="mb-0">{{ \App\Models\StudyGroup::count() }}</h3>
+                            <h3 class="mb-0">{{ $totalStudyGroups }}</h3>
                         </div>
                     </div>
                 </div>
@@ -95,7 +95,7 @@
                         </div>
                         <div class="flex-grow-1 ms-3">
                             <h6 class="text-muted mb-1">Total Mata Pelajaran</h6>
-                            <h3 class="mb-0">{{ \App\Models\Subject::count() }}</h3>
+                            <h3 class="mb-0">{{ $totalSubjects }}</h3>
                         </div>
                     </div>
                 </div>
@@ -116,11 +116,7 @@
                 <div class="card-header bg-white border-0 py-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Statistik Kehadiran Siswa</h5>
-                        <select class="form-select form-select-sm" style="width: auto;" id="attendancePeriod">
-                            <option value="week">Minggu Ini</option>
-                            <option value="month" selected>Bulan Ini</option>
-                            <option value="year">Tahun Ini</option>
-                        </select>
+                        <span class="badge bg-primary">7 Hari Terakhir</span>
                     </div>
                 </div>
                 <div class="card-body">
@@ -169,7 +165,7 @@
         </div>
     </div>
 
-    <!-- Quick Actions & Recent Activity -->
+    <!-- Quick Actions & System Info -->
     <div class="row g-3">
         <!-- Quick Actions -->
         <div class="col-lg-6">
@@ -238,7 +234,7 @@
                             </div>
                             <div class="flex-grow-1">
                                 <p class="mb-0 small text-muted">Total User Aktif</p>
-                                <h6 class="mb-0">{{ \App\Models\User::count() }} Pengguna</h6>
+                                <h6 class="mb-0">{{ $totalUsers }} Pengguna</h6>
                             </div>
                         </div>
                     </div>
@@ -279,4 +275,215 @@
             </div>
         </div>
     </div>
+
+    @push('script')
+ <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Color Palette
+            const colors = {
+                primary: '#0d6efd',
+                success: '#198754',
+                warning: '#ffc107',
+                danger: '#dc3545',
+                info: '#0dcaf0',
+                purple: '#6f42c1',
+                pink: '#d63384',
+                orange: '#fd7e14'
+            };
+
+            // Data dari Livewire
+            const attendanceData = @json($attendanceWeekly);
+            const genderData = @json($genderDistribution);
+            const classData = @json($studentsPerClass);
+            const registrationData = @json($monthlyRegistration);
+
+            // 1. Attendance Line Chart
+            const attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
+            new Chart(attendanceCtx, {
+                type: 'line',
+                data: {
+                    labels: attendanceData.labels,
+                    datasets: [{
+                        label: 'Hadir',
+                        data: attendanceData.hadir,
+                        borderColor: colors.success,
+                        backgroundColor: colors.success + '20',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'Izin',
+                        data: attendanceData.izin,
+                        borderColor: colors.warning,
+                        backgroundColor: colors.warning + '20',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'Sakit',
+                        data: attendanceData.sakit,
+                        borderColor: colors.info,
+                        backgroundColor: colors.info + '20',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'Alpa',
+                        data: attendanceData.alpa,
+                        borderColor: colors.danger,
+                        backgroundColor: colors.danger + '20',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 10
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 2. Gender Doughnut Chart
+            const genderCtx = document.getElementById('genderChart').getContext('2d');
+            new Chart(genderCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: genderData.labels,
+                    datasets: [{
+                        data: genderData.data,
+                        backgroundColor: [colors.primary, colors.pink],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return label + ': ' + value + ' (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 3. Students per Class Bar Chart
+            const classCtx = document.getElementById('studentsPerClassChart').getContext('2d');
+            new Chart(classCtx, {
+                type: 'bar',
+                data: {
+                    labels: classData.labels,
+                    datasets: [{
+                        label: 'Jumlah Siswa',
+                        data: classData.data,
+                        backgroundColor: colors.primary,
+                        borderRadius: 6,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Siswa: ' + context.parsed.y;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 5
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 4. Monthly Registration Line Chart
+            const registrationCtx = document.getElementById('monthlyRegistrationChart').getContext('2d');
+            new Chart(registrationCtx, {
+                type: 'line',
+                data: {
+                    labels: registrationData.labels,
+                    datasets: [{
+                        label: 'Pendaftaran Siswa',
+                        data: registrationData.data,
+                        borderColor: colors.success,
+                        backgroundColor: colors.success + '30',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Siswa Baru: ' + context.parsed.y;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+    @endpush
 </div>
+
+@push('styles')
+<style>
+    .hover-shadow {
+        transition: all 0.3s ease;
+    }
+
+    .hover-shadow:hover {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        transform: translateY(-2px);
+    }
+</style>
+@endpush

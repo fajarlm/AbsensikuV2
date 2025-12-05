@@ -2,11 +2,14 @@
 
 namespace App\Livewire\Admin\Subject;
 
+use App\Exports\SubjectExport;
 use App\Models\Subject;
 use App\Models\Teacher;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 
 class Index extends Component
 {
@@ -51,8 +54,7 @@ class Index extends Component
             'name' => 'required|string',
             'code' => [
                 'required',
-                'regex:/^[A-Z]{3}-[0-9]{3}$/',
-                'unique:subjects,code,' . $this->subject_id,
+                // 'regex:/^[A-Z]{3}-[0-9]{3}$/',
             ],
 
             'description' => 'nullable|string',
@@ -110,7 +112,6 @@ class Index extends Component
     {
         $this->validate();
 
-        try {
             $data = [
                 'teacher_id' => $this->teacher_id,
                 'name' => $this->name,
@@ -128,9 +129,6 @@ class Index extends Component
 
             $this->resetForm();
             $this->dispatch('closeModal');
-        } catch (\Exception $e) {
-            session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
-        }
     }
 
     // Delete (Soft Delete)
@@ -145,15 +143,11 @@ class Index extends Component
 
     public function delete()
     {
-        try {
             $subject = Subject::findOrFail($this->subject_id);
             $subject->delete(); // Soft delete
 
             session()->flash('success', 'Mata pelajaran berhasil dihapus!');
             $this->resetForm();
-        } catch (\Exception $e) {
-            session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
-        }
     }
 
     // Get Statistics
@@ -178,6 +172,18 @@ class Index extends Component
                     'name' => $teacher->user->name . ' (' . $teacher->nip . ')',
                 ];
             });
+    }
+
+     public function exportPdf(){
+        $subject = Subject::all();
+        view()->share('subject',$subject);
+        $pdf = Pdf::loadView('admin.subject.print_pdf',$subject);
+        $fileName = 'data-subject'.\Carbon\Carbon::now()->timestamp . '.pdf';
+        return $pdf->download($fileName);
+    }
+
+    public function exportExcel(){
+        return Excel::download(new SubjectExport, 'data-Mata-pelajaran.xlsx');
     }
 
     public function render()

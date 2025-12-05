@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\UserController;
 use App\Livewire\Auth\ForgotPassword;
 use App\Livewire\Auth\Login;
 use Illuminate\Support\Facades\Auth;
@@ -7,15 +8,17 @@ use Illuminate\Support\Facades\Route;
 
 // Route::view('/', 'auth.login')->name('login');
 Route::view('/', 'auth.login')->name('login');
+
 // Route::view('/logout', 'livewire.auth.logout')->name('logout');
-Route::post('/logout', function () {
-    Auth::logout();
-    request()->session()->invalidate();
-    request()->session()->regenerateToken();
+// Route::post('/logout', function () {
+//     Auth::logout();
+//     request()->session()->invalidate();
+//     request()->session()->regenerateToken();
 
-    return redirect('/login');
-})->name('logout');
+//     return redirect('/login');
+// })->name('logout');
 
+Route::get('/logout',[UserController::class,'logout'])->name('logout');
 Route::view('/forgot-password','auth.forgot-password')->name('forgot-password');
 
 Route::prefix('/admin')->name('admin.')->group(function () {
@@ -49,6 +52,7 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     Route::prefix('/schedule')->name('schedule.')->group(function () {
         Route::view('/index', 'admin.schedule.index')->name('index');
         Route::view('/trash', 'admin.schedule.trash')->name('trash');
+        Route::view('/manage', 'admin.schedule.manage')->name('manage');
 
     });
 
@@ -61,8 +65,10 @@ Route::prefix('/admin')->name('admin.')->group(function () {
 
 Route::prefix('/teacher')->name('teacher.')->group(function () {
     Route::view('/dashboard', 'teacher.dashboard')->name('dashboard');
+    Route::view('/profile', 'teacher.profile')->name('profile');
 });
 
 Route::prefix('/student')->name('student.')->group(function () {
     Route::view('/dashboard', 'student.dashboard')->name('dashboard');
+    Route::view('/profile', 'student.profile')->name('profile');
 });

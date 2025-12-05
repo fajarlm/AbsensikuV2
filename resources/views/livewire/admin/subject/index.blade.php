@@ -25,10 +25,25 @@
                 <p class="text-muted mb-0">Kelola mata pelajaran dan guru pengampu</p>
             </div>
             <div class="">
-                  <a  href="{{ route('admin.user.trash') }}" class="btn btn-danger">
+                <div class="btn-group dropstart">
+                    <button type="button" class="btn btn-warning dropdown-toggle " data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                        <i class="fas fa-print"></i> Export
+                    </button>
+                    <div class="dropdown-menu">
+                        <button wire:click="exportExcel" style="font-size: 18px"
+                            class=" text-success dropdown-item"><i class="fas fa-file-excel"></i>
+                            EXCEL</button>
+                        <button href="exportPdf" style="font-size: 18px" class=" text-danger dropdown-item"><i
+                                class="fas fa-file-pdf"></i>
+                            PDF</button>
+                    </div>
+                </div>
+                <a href="{{ route('admin.subject.trash') }}" class="btn btn-danger">
                     <i class="bi bi-trash me-1"></i> Data Sampah
                 </a>
-                <button wire:click="create" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#subjectModal">
+                <button wire:click="create" class="btn btn-primary" data-bs-toggle="modal"
+                    data-bs-target="#subjectModal">
                     <i class="bi bi-plus-circle me-1"></i> Tambah Mata Pelajaran
                 </button>
             </div>
@@ -85,8 +100,8 @@
                         <label class="form-label small text-muted">Guru Pengampu</label>
                         <select wire:model.live="filterTeacher" class="form-select">
                             <option value="">Semua Guru</option>
-                            
-                            @foreach($teachers as $teacher)
+
+                            @foreach ($teachers as $teacher)
                                 <option value="{{ $teacher['id'] }}">{{ $teacher['name'] }}</option>
                             @endforeach
                         </select>
@@ -135,10 +150,8 @@
                                         <div class="d-flex align-items-center">
                                             @if ($subject->teacher->user->profile)
                                                 <img src="{{ asset('storage/' . $subject->teacher->user->profile) }}"
-                                                    alt="{{ $subject->teacher->user->name }}" 
-                                                    class="rounded-circle me-2" 
-                                                    width="35"
-                                                    height="35" 
+                                                    alt="{{ $subject->teacher->user->name }}"
+                                                    class="rounded-circle me-2" width="35" height="35"
                                                     style="object-fit: cover;">
                                             @else
                                                 <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-2"
@@ -153,8 +166,9 @@
                                         </div>
                                     </td>
                                     <td>
-                                        @if($subject->description)
-                                            <small class="text-muted">{{ Str::limit($subject->description, 50) }}</small>
+                                        @if ($subject->description)
+                                            <small
+                                                class="text-muted">{{ Str::limit($subject->description, 50) }}</small>
                                         @else
                                             <small class="text-muted fst-italic">Tidak ada deskripsi</small>
                                         @endif
@@ -162,15 +176,12 @@
                                     <td>{{ $subject->created_at->format('d M Y') }}</td>
                                     <td class="text-center">
                                         <button wire:click="edit({{ $subject->id }})" class="btn btn-sm btn-info"
-                                            data-bs-toggle="modal" data-bs-target="#subjectModal"
-                                            title="Edit">
+                                            data-bs-toggle="modal" data-bs-target="#subjectModal" title="Edit">
                                             <i class="bi bi-pencil-square"></i>
                                         </button>
                                         <button wire:click="deleteConfirm({{ $subject->id }})"
-                                            class="btn btn-sm btn-danger" 
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#deleteModal"
-                                            title="Hapus">
+                                            class="btn btn-sm btn-danger" data-bs-toggle="modal"
+                                            data-bs-target="#deleteModal" title="Hapus">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </td>
@@ -215,7 +226,8 @@
                     <div class="modal-body">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label">Nama Mata Pelajaran <span class="text-danger">*</span></label>
+                                <label class="form-label">Nama Mata Pelajaran <span
+                                        class="text-danger">*</span></label>
                                 <input wire:model="name" type="text"
                                     class="form-control @error('name') is-invalid @enderror"
                                     placeholder="Contoh: Matematika">
@@ -225,15 +237,16 @@
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label">Kode Mata Pelajaran <span class="text-danger">*</span></label>
+                                <label class="form-label">Kode Mata Pelajaran <span
+                                        class="text-danger">*</span></label>
                                 <input wire:model="code" type="text"
-                                    class="form-control @error('code') is-invalid @enderror"
-                                    placeholder="Contoh: MTK"
+                                    class="form-control @error('code') is-invalid @enderror" placeholder="Contoh: MTK"
                                     style="text-transform: uppercase;">
                                 @error('code')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-                                <small class="text-muted">Format kode harus 3 huruf kapital diikuti tanda minus dan 3 angka. Contoh: MTK-011</small>
+                                <small class="text-muted">Format kode harus 3 huruf kapital diikuti tanda minus dan 3
+                                    angka. Contoh: MTK-011</small>
                             </div>
 
                             <div class="col-12">
@@ -241,7 +254,7 @@
                                 <select wire:model="teacher_id"
                                     class="form-select @error('teacher_id') is-invalid @enderror">
                                     <option value="">Pilih Guru Pengampu</option>
-                                    @foreach($teachers as $teacher)
+                                    @foreach ($teachers as $teacher)
                                         <option value="{{ $teacher['id'] }}">{{ $teacher['name'] }}</option>
                                     @endforeach
                                 </select>
@@ -251,10 +264,9 @@
                             </div>
 
                             <div class="col-12">
-                                <label class="form-label">Deskripsi <small class="text-muted">(Opsional)</small></label>
-                                <textarea wire:model="description" 
-                                    class="form-control @error('description') is-invalid @enderror" 
-                                    rows="4"
+                                <label class="form-label">Deskripsi <small
+                                        class="text-muted">(Opsional)</small></label>
+                                <textarea wire:model="description" class="form-control @error('description') is-invalid @enderror" rows="4"
                                     placeholder="Masukkan deskripsi mata pelajaran (opsional)"></textarea>
                                 @error('description')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -291,7 +303,8 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="mb-0">Apakah Anda yakin ingin menghapus mata pelajaran <strong>{{ $name }}</strong>?</p>
+                    <p class="mb-0">Apakah Anda yakin ingin menghapus mata pelajaran
+                        <strong>{{ $name }}</strong>?</p>
                     <p class="text-danger small mb-0 mt-2">
                         <i class="bi bi-info-circle me-1"></i>Data akan masuk ke trash (soft delete)
                     </p>
