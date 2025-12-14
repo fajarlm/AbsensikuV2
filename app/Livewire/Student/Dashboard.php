@@ -4,21 +4,23 @@ namespace App\Livewire\Student;
 
 use App\Models\Attendance;
 use App\Models\Schedule;
-use App\Models\Student ;
+use App\Models\Student;
 use App\Models\StudyGroup;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class Dashboard extends Component
 {
     use WithFileUploads;
 
-    public $activeTab = 'schedule'; 
+    public $activeTab = 'schedule';
 
     public $name;
+    public $username;
     public $current_password;
     public $new_password;
     public $new_password_confirmation;
@@ -27,45 +29,70 @@ class Dashboard extends Component
     public $studentData;
     public $verification_code;
 
+    public $showVerifi;
+
     public $selectedDate;
     public $selectedSchedule;
 
-    public $showEdit = False;
-
-    public $activedTab = false;
+    public $showEdit = false;
 
     public function toggleEdit()
     {
         $this->showEdit = !$this->showEdit;
     }
 
-    protected $rules = [
-        'name' => 'required|string|max:255',
-        'verification_code' => 'nullable|string|max:255',
-        'new_password' => 'nullable|min:8|confirmed',
-        'profile' => 'nullable|image|max:2048',
+    public function toggleVerifi()
+    {
+        $this->showVerifi = !$this->showVerifi;
+    }
+
+    public function rules()
+    {
+        return [
+            'name' => 'required|string|max:255',
+            'username' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('users', 'username')->ignore(Auth::id()),
+            ],
+            'verification_code' => 'nullable|string|max:255',
+            'current_password' => 'nullable|required_with:new_password',
+            'new_password' => 'nullable|min:8|confirmed',
+            'profile' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        ];
+    }
+
+
+    protected $messages = [
+        'profile.image' => 'File must be an image',
+        'profile.mimes' => 'Only JPEG, PNG, and JPG formats are allowed',
+        'profile.max' => 'Image size must not exceed 2MB',
+        'new_password.min' => 'Password must be at least 8 characters',
+        'new_password.confirmed' => 'Password confirmation does not match',
     ];
 
     public function mount()
     {
         $user = Auth::user();
         $this->name = $user->name;
-        $this->verification_code = $user->verification_code;
+        $this->username = $user->username;
+        // $this->verification_code = decrypt($user->student->verification_code);
+        $this->verification_code = $user->student->verification_code;
 
-        // Load student data
-        $this->studentData = Student::with(['studyGroup', 'user'])
-            ->where('user_id', $user->id)
-            ->first();
+        $this->studentData = Student::with(['studyGroup', 'user'])->where('user_id', $user->id)->first();
 
         $this->selectedDate = now()->format('Y-m-d');
+
+        if ($user->profile) {
+            $this->photoPreview = asset('storage/' . $user->profile);
+        }
     }
 
     public function render()
     {
         $user = Auth::user();
-        $student = Student::with(['studyGroup', 'user'])
-            ->where('user_id', $user->id)
-            ->first();
+        $student = Student::with(['studyGroup', 'user'])->where('user_id', $user->id)->first();
 
         $data = [
             'student' => $student,
@@ -75,14 +102,6 @@ class Dashboard extends Component
         switch ($this->activeTab) {
             case 'schedule':
                 $data['schedules'] = $this->getSchedules();
-                break;
-
-            case 'attendance':
-                $data['attendances'] = $this->getAttendances();
-                $data['schedules'] = Schedule::where('study_group_id', $student->study_group_id)
-                    ->with(['subject', 'teacher'])
-                    ->get();
-
                 break;
 
             case 'profile':
@@ -102,12 +121,8 @@ class Dashboard extends Component
         }
 
         return Schedule::with('subject')
-            ->where(function ($query) use ($student) {
-               $query->where('study_group_id', $student->study_group_id);
-            //    dd($student);
-
-            })
-            ->orderByRaw("FIELD(day, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')")
+            ->where('study_group_id', $student->study_group_id)
+            ->orderByRaw("FIELD(day, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu')")
             ->orderBy('start_time')
             ->get()
             ->groupBy('day');
@@ -137,71 +152,111 @@ class Dashboard extends Component
     public function selectTab($tab)
     {
         $this->activeTab = $tab;
-        $this->reset(['current_password', 'new_password','verification_code', 'new_password_confirmation', 'profile']);
+        $this->reset(['current_password', 'new_password', 'new_password_confirmation']);
+        $this->resetValidation();
 
         if ($tab === 'profile') {
-            $this->photoPreview = Auth::user()->profile ?? '';
+            $user = Auth::user();
+            $this->name = $user->name;
+            $this->username = $user->username;
+            $this->verification_code = $user->student->verification_code ?? '';
+
+            if ($user->profile) {
+                $this->photoPreview = asset('storage/' . $user->profile);
+            }
+        }
+    }
+
+    public function updatedProfile()
+    {
+        $this->validate([
+            'profile' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        if ($this->profile) {
+            try {
+                $this->photoPreview = $this->profile->temporaryUrl();
+            } catch (\Exception $e) {
+                $this->addError('profile', 'Failed to preview image');
+            }
+        }
+    }
+
+    public function updatePhotoOnly()
+    {
+        $this->validate([
+            'profile' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        $user = Auth::user();
+
+        try {
+            if ($user->profile && Storage::disk('public')->exists($user->profile)) {
+                Storage::disk('public')->delete($user->profile);
+            }
+
+            $path = $this->profile->store('profiles', 'public');
+            $user->profile = $path;
+            $user->save();
+
+            $this->photoPreview = asset('storage/' . $path);
+
+            $this->profile = null;
+
+            session()->flash('photo_message', 'Profile photo updated successfully!');
+
+            $this->dispatch('profile-updated');
+        } catch (\Exception $e) {
+            $this->addError('profile', 'Failed to upload photo: ' . $e->getMessage());
         }
     }
 
     public function updateProfile()
     {
+        $this->validate([
+            'name' => 'required|string|max:255',
+            'username' => 'required|string|max:255|unique:users,username,' . Auth::id(),
+            'verification_code' => 'nullable|string|max:255',
+            'current_password' => 'nullable|required_with:new_password',
+            'new_password' => 'nullable|min:8|confirmed',
+        ]);
+
         $user = Auth::user();
 
-        $rules = [
-            'name' => 'required|string|max:255',
-            'verification_code' => 'nullable|string|max:255',
-            'profile' => 'nullable|image|max:2048',
-        ];
-
         if ($this->new_password) {
-            $rules['current_password'] = 'required';
-            $rules['new_password'] = 'required|min:8|confirmed';
-        }
+            if (!$this->current_password) {
+                $this->addError('current_password', 'Current password is required to set new password');
+                return;
+            }
 
-        $this->validate($rules);
-
-        if ($this->new_password) {
             if (!Hash::check($this->current_password, $user->password)) {
-                $this->addError('current_password', 'Current password is incorrect.');
+                $this->addError('current_password', 'Current password is incorrect');
                 return;
             }
         }
 
-        $user->name = $this->name;
+        try {
+            $user->name = $this->name;
+            $user->username = $this->username;
 
-        if ($this->new_password) {
-            $user->password = Hash::make($this->new_password);
-        }
-
-        if ($this->profile) {
-            if ($user->profile) {
-                Storage::disk('public')->delete($user->profile);
+            if ($user->student) {
+                $user->student->verification_code = $this->verification_code;
+                $user->student->save();
             }
 
-            $path = $this->profile->store('profiles/', 'public');
-            $user->profile = $path;
-        }
+            if ($this->new_password) {
+                $user->password = Hash::make($this->new_password);
+            }
 
-        $user->save();
+            $user->save();
 
-        $student = Student::where('user_id', $user->id)->first();
-        
-        // Reset form
-        $this->reset(['current_password', 'new_password','verification_code' ,'new_password_confirmation', 'profile']);
-        $this->photoPreview = $user->profile ?? '';
+            $this->reset(['current_password', 'new_password', 'new_password_confirmation']);
 
-        session()->flash('profile_message', 'Profile updated successfully!');
-    }
+            session()->flash('profile_message', 'Profile updated successfully!');
 
-    public function updatedPhoto()
-    {
-        $this->validate([
-            'profile' => 'nullable|image|max:2048',
-        ]);
-
-        if ($this->profile) {
-            $this->photoPreview = $this->profile->temporaryUrl();
+            $this->showEdit = false;
+        } catch (\Exception $e) {
+            $this->addError('name', 'Failed to update profile: ' . $e->getMessage());
         }
     }
 
@@ -209,13 +264,24 @@ class Dashboard extends Component
     {
         $user = Auth::user();
 
-        if ($user->profile) {
-            Storage::disk('public')->delete($user->profile);
-            $user->profile = null;
-            $user->save();
+        try {
+            if ($user->profile) {
+                if (Storage::disk('public')->exists($user->profile)) {
+                    Storage::disk('public')->delete($user->profile);
+                }
 
-            $this->photoPreview = '';
-            $this->profile = null;
+                $user->profile = null;
+                $user->save();
+
+                $this->photoPreview = null;
+                $this->profile = null;
+
+                session()->flash('photo_message', 'Profile photo removed successfully!');
+
+                $this->dispatch('profile-updated');
+            }
+        } catch (\Exception $e) {
+            $this->addError('profile', 'Failed to remove photo: ' . $e->getMessage());
         }
     }
 

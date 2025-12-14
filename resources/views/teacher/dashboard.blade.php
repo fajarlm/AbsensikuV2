@@ -1,6 +1,5 @@
 @extends('layouts.templates')
 
-{{-- @section('title', 'Dahsboard') --}}
 @push('styles')
     <style>
         

@@ -24,7 +24,6 @@
         </div>
     @endif
 
-    {{-- Search --}}
     <div class="card shadow-sm mb-3">
         <div class="card-body">
             <div class="row g-2">
@@ -55,9 +54,9 @@
                         @forelse ($students as $index => $item)
                             <tr>
                                 <td>{{ $students->firstItem() + $index }}</td>
-                                <td>{{ $item->user->name }}</td>
-                                <td>{{ $item->user->username }}</td>
-                                <td>{{ $item->nis }}</td>
+                                <td>{{ $item->user->name ?? '-' }}</td>
+                                <td>{{ $item->user->username ?? '-' }}</td>
+                                <td>{{ $item->nis ?? '-' }}</td>
                                 <td>
                                     {{ $item->studyGroup->grade ?? '-' }}
                                     {{ $item->studyGroup->major ?? '' }}

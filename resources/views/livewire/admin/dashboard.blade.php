@@ -9,7 +9,7 @@
         </div>
     </div>
 
-    <!-- Statistics Cards -->
+    <!-- Absensi kehadiran stats -->
     <div class="row g-3 mb-4">
         <!-- Total Students -->
         <div class="col-xl-3 col-md-6">
@@ -125,11 +125,10 @@
             </div>
         </div>
 
-        <!-- Gender Distribution -->
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-0 py-3">
-                    <h5 class="mb-0">Distribusi Jenis Kelamin</h5>
+                    <h5 class="mb-0">Jenis Kelamin Siswa</h5>
                 </div>
                 <div class="card-body d-flex align-items-center justify-content-center">
                     <canvas id="genderChart"></canvas>
@@ -139,7 +138,7 @@
     </div>
 
     <!-- More Charts -->
-    <div class="row g-3 mb-4">
+    {{-- <div class="row g-3 mb-4">
         <!-- Students per Class -->
         <div class="col-lg-6">
             <div class="card border-0 shadow-sm h-100">
@@ -163,7 +162,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> --}}
 
     <!-- Quick Actions & System Info -->
     <div class="row g-3">
@@ -327,6 +326,13 @@
                         tension: 0.4,
                         fill: true
                     }, {
+                        label: 'dispen',
+                        data: attendanceData.dispen,
+                        borderColor: colors.purple,
+                        backgroundColor: colors.purple + '20',
+                        tension: 0.4,
+                        fill: true
+                    }, {
                         label: 'Alpa',
                         data: attendanceData.alpa,
                         borderColor: colors.danger,
@@ -392,84 +398,82 @@
                 }
             });
 
-            // 3. Students per Class Bar Chart
-            const classCtx = document.getElementById('studentsPerClassChart').getContext('2d');
-            new Chart(classCtx, {
-                type: 'bar',
-                data: {
-                    labels: classData.labels,
-                    datasets: [{
-                        label: 'Jumlah Siswa',
-                        data: classData.data,
-                        backgroundColor: colors.primary,
-                        borderRadius: 6,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return 'Siswa: ' + context.parsed.y;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 5
-                            }
-                        }
-                    }
-                }
-            });
+            // const classCtx = document.getElementById('studentsPerClassChart').getContext('2d');
+            // new Chart(classCtx, {
+            //     type: 'bar',
+            //     data: {
+            //         labels: classData.labels,
+            //         datasets: [{
+            //             label: 'Jumlah Siswa',
+            //             data: classData.data,
+            //             backgroundColor: colors.primary,
+            //             borderRadius: 6,
+            //         }]
+            //     },
+            //     options: {
+            //         responsive: true,
+            //         maintainAspectRatio: true,
+            //         plugins: {
+            //             legend: {
+            //                 display: false
+            //             },
+            //             tooltip: {
+            //                 callbacks: {
+            //                     label: function(context) {
+            //                         return 'Siswa: ' + context.parsed.y;
+            //                     }
+            //                 }
+            //             }
+            //         },
+            //         scales: {
+            //             y: {
+            //                 beginAtZero: true,
+            //                 ticks: {
+            //                     stepSize: 5
+            //                 }
+            //             }
+            //         }
+            //     }
+            // });
 
-            // 4. Monthly Registration Line Chart
-            const registrationCtx = document.getElementById('monthlyRegistrationChart').getContext('2d');
-            new Chart(registrationCtx, {
-                type: 'line',
-                data: {
-                    labels: registrationData.labels,
-                    datasets: [{
-                        label: 'Pendaftaran Siswa',
-                        data: registrationData.data,
-                        borderColor: colors.success,
-                        backgroundColor: colors.success + '30',
-                        tension: 0.4,
-                        fill: true,
-                        pointRadius: 4,
-                        pointHoverRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return 'Siswa Baru: ' + context.parsed.y;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
+            // const registrationCtx = document.getElementById('monthlyRegistrationChart').getContext('2d');
+            // new Chart(registrationCtx, {
+            //     type: 'line',
+            //     data: {
+            //         labels: registrationData.labels,
+            //         datasets: [{
+            //             label: 'Pendaftaran Siswa',
+            //             data: registrationData.data,
+            //             borderColor: colors.success,
+            //             backgroundColor: colors.success + '30',
+            //             tension: 0.4,
+            //             fill: true,
+            //             pointRadius: 4,
+            //             pointHoverRadius: 6
+            //         }]
+            //     },
+            //     options: {
+            //         responsive: true,
+            //         maintainAspectRatio: true,
+            //         plugins: {
+            //             legend: {
+            //                 display: false
+            //             },
+            //             tooltip: {
+            //                 callbacks: {
+            //                     label: function(context) {
+            //                         return 'Siswa Baru: ' + context.parsed.y;
+            //                     }
+            //                 }
+            //             }
+            //         },
+            //         scales: {
+            //             y: {
+            //                 beginAtZero: true
+            //             }
+            //         }
+            //     }
+            // });
         });
     </script>
     @endpush

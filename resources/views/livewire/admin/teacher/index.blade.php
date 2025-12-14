@@ -1,4 +1,3 @@
-<!-- resources/views/livewire/admin/teacher/index.blade.php -->
 <div>
     <div class="container-fluid py-4">
         <!-- Flash Messages -->
@@ -121,7 +120,7 @@
                         <label class="form-label small text-muted">Pencarian</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-search"></i></span>
-                            <input wire:model.live.debounce.300ms="search" type="text" class="form-control"
+                            <input wire:model.live.debounce.300ms="search" type="number" class="form-control"
                                 placeholder="Cari nama, username, atau NIP...">
                         </div>
                     </div>

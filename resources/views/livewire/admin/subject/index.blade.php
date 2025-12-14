@@ -1,7 +1,5 @@
-<!-- resources/views/livewire/admin/subject/index.blade.php -->
 <div>
     <div class="container-fluid py-4">
-        <!-- Flash Messages -->
         @if (session()->has('success'))
             <div class="alert alert-success alert-dismissible fade show" role="alert">
                 <i class="bi bi-check-circle-fill me-2"></i>
@@ -31,8 +29,8 @@
                         <i class="fas fa-print"></i> Export
                     </button>
                     <div class="dropdown-menu">
-                        <button wire:click="exportExcel" style="font-size: 18px"
-                            class=" text-success dropdown-item"><i class="fas fa-file-excel"></i>
+                        <button wire:click="exportExcel" style="font-size: 18px" class=" text-success dropdown-item"><i
+                                class="fas fa-file-excel"></i>
                             EXCEL</button>
                         <button href="exportPdf" style="font-size: 18px" class=" text-danger dropdown-item"><i
                                 class="fas fa-file-pdf"></i>
@@ -148,20 +146,23 @@
                                     </td>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            @if ($subject->teacher->user->profile)
+                                            @if (optional(optional($subject->teacher)->user)->profile)
                                                 <img src="{{ asset('storage/' . $subject->teacher->user->profile) }}"
-                                                    alt="{{ $subject->teacher->user->name }}"
+                                                    alt="{{ optional($subject->teacher->user)->name }}"
                                                     class="rounded-circle me-2" width="35" height="35"
                                                     style="object-fit: cover;">
                                             @else
                                                 <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-2"
                                                     style="width: 35px; height: 35px; font-size: 14px;">
-                                                    {{ strtoupper(substr($subject->teacher->user->name, 0, 1)) }}
+                                                    {{ strtoupper(substr(optional(optional($subject->teacher)->user)->name, 0, 1)) }}
                                                 </div>
                                             @endif
+
                                             <div>
-                                                <div class="fw-semibold">{{ $subject->teacher->user->name }}</div>
-                                                <small class="text-muted">NIP: {{ $subject->teacher->nip }}</small>
+                                                <div class="fw-semibold">{{ $subject->teacher->user->name ?? '-' }}
+                                                </div>
+                                                <small class="text-muted">NIP:
+                                                    {{ $subject->teacher->nip ?? '-' }}</small>
                                             </div>
                                         </div>
                                     </td>
@@ -304,7 +305,8 @@
                 </div>
                 <div class="modal-body">
                     <p class="mb-0">Apakah Anda yakin ingin menghapus mata pelajaran
-                        <strong>{{ $name }}</strong>?</p>
+                        <strong>{{ $name }}</strong>?
+                    </p>
                     <p class="text-danger small mb-0 mt-2">
                         <i class="bi bi-info-circle me-1"></i>Data akan masuk ke trash (soft delete)
                     </p>

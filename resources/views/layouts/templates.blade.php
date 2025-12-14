@@ -108,13 +108,13 @@
                 <ul class="navbar-nav mx-auto">
                     @if (Auth::user()->role === 'teacher')
                         <!-- Teacher Navigation -->
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('teacher.dashboard') ? 'active' : '' }}"
-                                href="{{ route('teacher.dashboard') }}">
-                                <i class="bi bi-speedometer2 me-1"></i>
-                                Dashboard
-                            </a>
-                        </li>
+                            {{-- <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('teacher.dashboard') ? 'active' : '' }}"
+                                    href="{{ route('teacher.dashboard') }}">
+                                    <i class="bi bi-speedometer2 me-1"></i>
+                                    Dashboard
+                                </a>
+                            </li> --}}
                         {{-- <li class="nav-item">
                             <a class="nav-link" href="#">
                                 <i class="bi bi-calendar-week me-1"></i>
@@ -135,13 +135,13 @@
                         </li> --}}
                     @elseif(Auth::user()->role === 'student')
                         <!-- Student Navigation -->
-                        <li class="nav-item">
+                        {{-- <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('student.dashboard') ? 'active' : '' }}"
                                 href="{{ route('student.dashboard') }}">
                                 <i class="bi bi-speedometer2 me-1"></i>
                                 Dashboard
                             </a>
-                        </li>
+                        </li> --}}
                         {{-- <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('student.schedule') ? 'active' : '' }}" 
                                href="#">
@@ -222,18 +222,18 @@
                             </div>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end shadow">
-                            <li>
+                            {{-- <li>
                                 <a class="dropdown-item"
                                     href="{{ Auth::user()->role === 'teacher' ? route('teacher.profile') : route('student.profile') }}">
                                     <i class="bi bi-person me-2"></i>Profile
                                 </a>
-                            </li>
+                            </li> --}}
                            
                             <li>
                                 <hr class="dropdown-divider">
                             </li>
                             <li>
-                                <a href="{{ route('logout') }}" class="btn ms-3 btn-danger rounded">
+                                <a href="{{ route('logout') }}" class="btn ms-4 btn-danger rounded">
                                     <i class="fas fa-sign-out-alt"></i> Logout
                                 </a>
                             </li>

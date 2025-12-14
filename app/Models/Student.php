@@ -47,7 +47,6 @@ class Student extends Model
     {
         return [
             'password' => 'hashed',
-            'verification_code' => 'hashed',
         ];
     }
 }

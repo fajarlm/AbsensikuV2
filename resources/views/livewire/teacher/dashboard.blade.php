@@ -1,4 +1,3 @@
-<!-- resources/views/livewire/teacher/dashboard.blade.php -->
 <div>
     <div class="container py-4">
         <!-- Flash Messages -->
@@ -150,9 +149,7 @@
             </div>
         </div>
 
-        <!-- Jadwal & Attendance Table -->
         <div class="row g-4">
-            <!-- Jadwal Mengajar (Kiri) -->
             <div class="col-lg-4">
                 <div class="card shadow">
                     <div class="card-header bg-primary text-white">
@@ -196,13 +193,11 @@
                 </div>
             </div>
 
-            <!-- Attendance Table (Kanan) -->
             <div class="col-lg-8">
                 <div class="card shadow">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Data Kehadiran</h5>
                         <div class="text-muted small">
-                            {{-- Menampilkan {{ $attendances->firstItem() ?? 0 }} - {{ $attendances->lastItem() ?? 0 }} dari {{ $attendances->total() }} data --}}
                         </div>
                     </div>
                     <div class="card-body p-0">
@@ -251,17 +246,21 @@
                                             <td>{{ $attendance->schedule->subject->name }}</td>
                                             <td>{{ \Carbon\Carbon::parse($attendance->date)->format('d M Y') }}</td>
                                             <td class="text-center">
-                                                @if ($attendance->status == 'hadir')
+                                                @if ($attendance->status == 'present')
                                                     <span class="badge bg-success">
                                                         <i class="bi bi-check-circle me-1"></i> Hadir
                                                     </span>
-                                                @elseif($attendance->status == 'izin')
+                                                @elseif($attendance->status == 'permission')
                                                     <span class="badge bg-info">
                                                         <i class="bi bi-envelope me-1"></i> Izin
                                                     </span>
-                                                @elseif($attendance->status == 'sakit')
+                                                @elseif($attendance->status == 'sick')
                                                     <span class="badge bg-warning">
                                                         <i class="bi bi-heart-pulse me-1"></i> Sakit
+                                                    </span>
+                                                @elseif($attendance->status == 'dispensed')
+                                                    <span class="badge bg-primary">
+                                                        <i class="bi bi-heart-pulse me-1"></i>Dispen
                                                     </span>
                                                 @else
                                                     <span class="badge bg-danger">
@@ -296,7 +295,6 @@
                             </table>
                         </div>
 
-                        <!-- Pagination -->
                         @if ($attendances->hasPages())
                             <div class="card-footer bg-white">
                                 {{-- {{ $attendances->links() }} --}}
@@ -308,7 +306,6 @@
         </div>
     </div>
 
-    <!-- Modal Absensi -->
     @if ($showModal)
         <div class="modal fade show d-block mt-5" tabindex="-1" style="background: rgba(0,0,0,0.5);">
             <div class="modal-dialog modal-xl modal-dialog-scrollable">
@@ -369,23 +366,23 @@
                                         <th width="5%" class="text-center">#</th>
                                         <th width="10%">NIS</th>
                                         <th width="30%">Nama Siswa</th>
-                                        <th width="11%" class="text-center bg-success bg-opacity-10">
+                                        <th width="11%" class="text-center">
                                             <i class="bi bi-check-circle text-success me-1"></i>
                                             Hadir
                                         </th>
-                                        <th width="11%" class="text-center bg-info bg-opacity-10">
+                                        <th width="11%" class="text-center">
                                             <i class="bi bi-envelope text-info me-1"></i>
                                             Izin
                                         </th>
-                                        <th width="11%" class="text-center bg-warning bg-opacity-10">
+                                        <th width="11%" class="text-center">
                                             <i class="bi bi-heart-pulse text-warning me-1"></i>
                                             Sakit
                                         </th>
-                                        <th width="11%" class="text-center bg-prim  ary bg-opacity-10">
+                                        <th width="11%" class="text-center">
                                             <i class="bi bi-envelope text-info me-1"></i>
                                             Dispen
                                         </th>
-                                        <th width="11%" class="text-center bg-danger bg-opacity-10">
+                                        <th width="11%" class="text-center">
                                             <i class="bi bi-x-circle text-danger me-1"></i>
                                             Alpa
                                         </th>
@@ -416,7 +413,7 @@
                                                         @if ($student->user->gender)
                                                             <br>
                                                             <small class="text-muted">
-                                                                @if ($student->user->gender == 'L')
+                                                                @if ($student->user->gender == 'male')
                                                                     <i class="bi bi-gender-male text-primary"></i>
                                                                     Laki-laki
                                                                 @else
@@ -430,7 +427,7 @@
                                             </td>
 
                                             <!-- Radio Buttons -->
-                                            <td class="text-center bg-success bg-opacity-10">
+                                            <td class="text-center ">
                                                 <div class="form-check d-flex justify-content-center">
                                                     <input type="radio" class="form-check-input"
                                                         style="width: 22px; height: 22px; cursor: pointer;"
@@ -440,7 +437,7 @@
                                                         @checked($modalAttendances[$student->id]['status'] === 'present')>
                                                 </div>
                                             </td>
-                                            <td class="text-center bg-info bg-opacity-10">
+                                            <td class="text-center ">
                                                 <div class="form-check d-flex justify-content-center">
                                                     <input type="radio" class="form-check-input"
                                                         style="width: 22px; height: 22px; cursor: pointer;"
@@ -450,7 +447,7 @@
                                                         @checked($modalAttendances[$student->id]['status'] === 'permission')>
                                                 </div>
                                             </td>
-                                            <td class="text-center bg-warning bg-opacity-10">
+                                            <td class="text-center ">
                                                 <div class="form-check d-flex justify-content-center">
                                                     <input type="radio" class="form-check-input"
                                                         style="width: 22px; height: 22px; cursor: pointer;"
@@ -461,7 +458,7 @@
                                                 </div>
                                             </td>
 
-                                            <td class="text-center bg-info bg-opacity-10">
+                                            <td class="text-center ">
                                                 <div class="form-check d-flex justify-content-center">
                                                     <input type="radio" class="form-check-input"
                                                         style="width: 22px; height: 22px; cursor: pointer;"
@@ -472,7 +469,7 @@
                                                 </div>
                                             </td>
 
-                                            <td class="text-center bg-danger bg-opacity-10">
+                                            <td class="text-center ">
                                                 <div class="form-check d-flex justify-content-center">
                                                     <input type="radio" class="form-check-input"
                                                         style="width: 22px; height: 22px; cursor: pointer;"

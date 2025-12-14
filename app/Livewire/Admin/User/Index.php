@@ -5,6 +5,8 @@ namespace App\Livewire\Admin\User;
 use App\Models\User;
 use Livewire\Component;
 use App\Exports\UserExport;
+use App\Models\Student;
+use App\Models\Teacher;
 use Livewire\WithPagination;
 use Livewire\WithFileUploads;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -119,42 +121,57 @@ class Index extends Component
         $this->dispatch('open-modal', modal: 'userModal');
     }
 
-    public function save()
-    {
-        $this->validate();
+    // public function save()
+    // {
+    //     $this->validate();
 
-        $data = [
-            'name' => $this->name,
-            'username' => $this->username,
-            'role' => $this->role,
-            'gender' => $this->gender,
-        ];
+    //     $data = [
+    //         'name' => $this->name,
+    //         'username' => $this->username,
+    //         'role' => $this->role,
+    //         'gender' => $this->gender,
+    //     ];
 
-        if (!$this->isEdit && $this->password) {
-            $data['password'] = Hash::make($this->password);
-        } elseif ($this->isEdit && $this->password) {
-            $data['password'] = Hash::make($this->password);
-        }
+    //     if (!$this->isEdit && $this->password) {
+    //         $data['password'] = Hash::make($this->password);
+    //     } elseif ($this->isEdit && $this->password) {
+    //         $data['password'] = Hash::make($this->password);
+    //     }
 
-        if ($this->profile) {
-            if ($this->isEdit && $this->old_profile) {
-                Storage::disk('public')->delete($this->old_profile);
-            }
-            $data['profile'] = $this->profile->store('profiles', 'public');
-        }
+    //     if ($this->profile) {
+    //         if ($this->isEdit && $this->old_profile) {
+    //             Storage::disk('public')->delete($this->old_profile);
+    //         }
+    //         $data['profile'] = $this->profile->store('profiles', 'public');
+    //     }
 
-        if ($this->isEdit) {
-            $user = User::findOrFail($this->user_id);
-            $user->update($data);
-            session()->flash('success', 'User berhasil diperbarui!');
-        } else {
-            User::create($data);
-            session()->flash('success', 'User berhasil ditambahkan!');
-        }
+    //     if ($this->isEdit) {
+    //         $user = User::findOrFail($this->user_id);
+    //         $user->update($data);
+    //         session()->flash('success', 'User berhasil diperbarui!');
+    //     } else {
+    //         $userCreate = User::create($data);
+    //         if ($data['role'] == 'student') {
+    //             Student::create([
+    //                 'user_id' => $userCreate->id,
+    //                 'nis' => NULL,
+    //                 'nisn' => NULL,
+    //                 'study_group_id' => NULL,
+    //                 'verification_code' => NULL,
+    //             ]);
+    //         } else {
+    //             Teacher::create([
+    //                 'user_id' => $userCreate->id,
+    //                 'nip' => NULL,
+    //                 'status' => NULL,
+    //             ]);
+    //         }
+    //         session()->flash('success', 'User berhasil ditambahkan!');
+    //     }
 
-        $this->resetForm();
-        $this->dispatch('close-modal', modal: 'userModal');
-    }
+    //     $this->resetForm();
+    //     $this->dispatch('close-modal', modal: 'userModal');
+    // }
 
     public function confirmDelete($id)
     {
@@ -171,6 +188,8 @@ class Index extends Component
         // Soft delete user (akan otomatis soft delete related data jika ada cascade)
         $user->delete();
 
+        //session adalah sesi (php bult in)
+        // flash mirip seperti with tetapi lebih coock untuk mengirim mesaage
         session()->flash('success', 'User berhasil dihapus dan dipindahkan ke sampah!');
         $this->resetForm();
         $this->dispatch('close-modal', modal: 'deleteModal');
@@ -183,7 +202,7 @@ class Index extends Component
         $this->username = '';
         $this->password = '';
         $this->password_confirmation = '';
-        $this->role = 'student';
+        $this->role = '';
         $this->gender = null;
         $this->profile = null;
         $this->old_profile = null;
@@ -191,28 +210,28 @@ class Index extends Component
         $this->resetValidation();
     }
 
-   public function exportPdf()
-{
-    $query = User::with(['student.studyGroup', 'teacher.subjects']);
-    
-    if ($this->filterRole) {
-        $query->where('role', $this->filterRole);
+    public function exportPdf()
+    {
+        $query = User::with(['student.studyGroup', 'teacher.subjects']);
+
+        if ($this->filterRole) {
+            $query->where('role', $this->filterRole);
+        }
+
+        $users = $query->latest()->get()->toArray();
+        $role = $this->filterRole ?: null;
+
+        $pdf = Pdf::loadView('admin.user.print_pdf', [
+            'users' => $users,
+            'role' => $role
+        ])->setPaper('a4', 'landscape');
+
+        $fileName = 'data-users-' . ($role ?: 'all') . '-' . now()->format('Y-m-d') . '.pdf';
+
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->stream();
+        }, $fileName);
     }
-    
-    $users = $query->latest()->get()->toArray();
-    $role = $this->filterRole ?: null;
-    
-    $pdf = Pdf::loadView('admin.user.print_pdf', [
-        'users' => $users,
-        'role' => $role
-    ])->setPaper('a4', 'landscape');    
-    
-    $fileName = 'data-users-' . ($role ?: 'all') . '-' . now()->format('Y-m-d') . '.pdf';
-    
-    return response()->streamDownload(function () use ($pdf) {
-        echo $pdf->stream();
-    }, $fileName);
-}   
 
     public function exportExcel()
     {
@@ -229,7 +248,7 @@ class Index extends Component
             })
             ->when($this->filterRole, function ($q) {
                 $q->where('role', $this->filterRole);
-            })
+            })  
             ->when($this->filterGender, function ($q) {
                 $q->where('gender', $this->filterGender);
             })

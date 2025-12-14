@@ -32,9 +32,9 @@
                 <a href="{{ route('admin.user.trash') }}" class="btn btn-danger">
                     <i class="bi bi-trash me-1"></i> Data Sampah
                 </a>
-                <button class="btn btn-primary" wire:click="create" data-bs-toggle="modal" data-bs-target="#userModal">
+                {{-- <button class="btn btn-primary" wire:click="create" data-bs-toggle="modal" data-bs-target="#userModal">
                     <i class="bi bi-plus-circle me-1"></i> Tambah User
-                </button>
+                </button> --}}
             </div>
         </div>
 
@@ -243,7 +243,7 @@
     </div>
 
     <!-- Create/Edit Modal -->
-    <div class="modal fade" id="userModal" tabindex="-1" wire:ignore.self>
+    {{-- <div class="modal fade" id="userModal" tabindex="-1" wire:ignore.self>
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
@@ -315,7 +315,6 @@
                                 <label class="form-label">Role <span class="text-danger">*</span></label>
                                 <select wire:model="role" class="form-select @error('role') is-invalid @enderror">
                                     <option value="">Pilih Role</option>
-                                    <option value="admin">Admin</option>
                                     <option value="teacher">Guru</option>
                                     <option value="student">Siswa</option>
                                 </select>
@@ -363,6 +362,11 @@
                                 </div>
                             </div>
                         </div>
+                        <h4>Isi Data Tambahan User </h4>
+                        <hr class="col-12">
+                        <div class="">
+
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
@@ -382,7 +386,7 @@
                 </form>
             </div>
         </div>
-    </div>
+    </div> --}}
 
     <!-- Delete Confirmation Modal -->
     <div class="modal fade" id="deleteModal" tabindex="-1" wire:ignore.self>
@@ -397,7 +401,7 @@
                 <div class="modal-body">
                     <p class="mb-0">Apakah Anda yakin ingin menghapus user <strong>{{ $name }}</strong>?</p>
                     <p class="text-danger small mb-0 mt-2">
-                        <i class="bi bi-info-circle me-1"></i>Data yang dihapus tidak dapat dikembalikan!
+                        <i class="bi bi-info-circle me-1"></i>Data yang dihapus dapat dikembalikan!
                     </p>
                 </div>
                 <div class="modal-footer">

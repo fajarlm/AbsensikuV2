@@ -60,16 +60,18 @@ class Dashboard extends Component
         $izin = [];
         $sakit = [];
         $alpa = [];
+        $dispen = [];
 
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i)->format('Y-m-d');
             $dayName = now()->subDays($i)->locale('id')->isoFormat('dddd');
             $dates[] = $dayName;
 
-            $hadir[] = $weeklyAttendance->where('date', $date)->where('status', 'hadir')->first()->total ?? 0;
-            $izin[] = $weeklyAttendance->where('date', $date)->where('status', 'izin')->first()->total ?? 0;
-            $sakit[] = $weeklyAttendance->where('date', $date)->where('status', 'sakit')->first()->total ?? 0;
-            $alpa[] = $weeklyAttendance->where('date', $date)->where('status', 'alpa')->first()->total ?? 0;
+            $hadir[] = $weeklyAttendance->where('date', $date)->where('status', 'present')->first()->total ?? 0;
+            $izin[] = $weeklyAttendance->where('date', $date)->where('status', 'permission')->first()->total ?? 0;
+            $sakit[] = $weeklyAttendance->where('date', $date)->where('status', 'sick')->first()->total ?? 0;
+            $alpa[] = $weeklyAttendance->where('date', $date)->where('status', 'absent')->first()->total ?? 0;
+            $dispen[] = $weeklyAttendance->where('date', $date)->where('status', 'dispensed')->first()->total ?? 0;
         }
 
         $this->attendanceWeekly = [
@@ -78,6 +80,7 @@ class Dashboard extends Component
             'izin' => $izin,
             'sakit' => $sakit,
             'alpa' => $alpa,
+            'dispen' => $dispen,
         ];
 
         // 2. Distribusi Gender

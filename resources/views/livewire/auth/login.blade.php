@@ -43,10 +43,6 @@
                             <i id="togglePasswordIcon" class="bi bi-eye-slash"></i>
                         </span>
                     </div>
-
-
-
-
                     <button type="submit" class="btn btn-primary w-100">Login</button>
 
                     @if (session('error'))

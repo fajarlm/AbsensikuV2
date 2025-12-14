@@ -14,7 +14,6 @@
         </div>
     </div>
 
-    <!-- Stats Cards -->
     <div class="row g-3 mb-4">
         <div class="col-xl-2 col-md-4">
             <div class="card border-0 shadow-sm bg-primary text-white">
@@ -66,7 +65,6 @@
         </div>
     </div>
 
-    <!-- Filter -->
     <div class="card shadow-sm mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -98,7 +96,6 @@
         </div>
     </div>
 
-    <!-- Table -->
     <div class="card shadow-sm">
         <div class="card-body">
             <div class="table-responsive">

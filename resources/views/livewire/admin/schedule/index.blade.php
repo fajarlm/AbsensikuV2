@@ -9,19 +9,20 @@
         <div class="">
 
             <div class="btn-group dropstart">
-                <button type="button" class="btn btn-warning dropdown-toggle " data-bs-toggle="dropdown"
+                {{-- <button type="button" class="btn btn-warning dropdown-toggle " data-bs-toggle="dropdown"
                     aria-expanded="false">
                     <i class="fas fa-print"></i> Export
                 </button>
+                 --}}
                 <div class="dropdown-menu">
                     <button wire:click="exportExcel" style="font-size: 18px" class=" text-success dropdown-item"><i
                             class="fas fa-file-excel"></i>
                         EXCEL</button>
-                 
-                 <button wire:click="exportPdf" class=" text-danger dropdown-item">
-                     <i class="fas fa-file-pdf"></i> PDF
+
+                    <button wire:click="exportPdf" class=" text-danger dropdown-item">
+                        <i class="fas fa-file-pdf"></i> PDF
                     </button>
-                    
+
                     {{-- @if ($selectedGroup)
                         <button wire:click="exportPdf" class="text-danger dropdown-item">
                             <i class="fas fa-print"></i> Cetak Jadwal {{ $selectedGroupName }}
@@ -117,8 +118,10 @@
                                                     $dbTime = is_string($s->start_time)
                                                         ? substr($s->start_time, 0, 5)
                                                         : $s->start_time->format('H:i');
+
                                                     return $s->day === $day && $dbTime === $start;
                                                 });
+                                                // print_r($start);
                                             @endphp
 
                                             <td class="p-3 text-center align-middle"
@@ -170,7 +173,8 @@
                 <form wire:submit.prevent="save">
                     <div class="modal-body">
                         <div class="row g-3">
-                            <div class="col-md-6">
+
+                            {{-- <div class="col-md-6">
                                 <label>Kelas <span class="text-danger">*</span></label>
                                 <select wire:model="study_group_id"
                                     class="form-select @error('study_group_id') is-invalid @enderror">
@@ -183,7 +187,16 @@
                                 @error('study_group_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
+                            </div> --}}
+
+                            <div class="col-md-6">
+                                <label>Kelas <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" value="{{ $selectedClassName }}" disabled>
+                                @error('study_group_id')
+                                    <div class="text-danger small mt-1">{{ $message }}</div>
+                                @enderror
                             </div>
+
                             <div class="col-md-6">
                                 <label>Mata Pelajaran <span class="text-danger">*</span></label>
                                 <select wire:model="subject_id"
@@ -199,10 +212,11 @@
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
-                            <div class="col-md-4">
+
+                            {{-- <div class="col-md-4">
                                 <label>Hari <span class="text-danger">*</span></label>
                                 <select wire:model="day" class="form-select @error('day') is-invalid @enderror">
-                                    <option value="">Pilih Hari</option>
+                                    <option value="" selected hidden>Pilih Hari</option>
                                     @foreach ($days as $d)
                                         <option>{{ $d }}</option>
                                     @endforeach
@@ -210,39 +224,39 @@
                                 @error('day')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-                            </div>
-                            <div class="col-md-4">
-                                <label>Jam Mulai <span class="text-danger">*</span></label>
-                                <select wire:model="start_time"
-                                    class="form-select @error('start_time') is-invalid @enderror">
-                                    <option value="">Pilih Jam Mulai</option>
-                                    @foreach ($timeSlots as $ts)
-                                        <option value="{{ $ts }}">{{ $ts }}</option>
-                                    @endforeach
-                                </select>
-                                @error('start_time')
+                            </div> --}}
+
+                            <div class="col-md-4 mb-3">
+                                <label>Hari <span class="text-danger">*</span></label>
+
+                                <input type="text" class="form-control" wire:model="day" value="{{ $day }}" disabled>
+
+                                @error('day')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
+                            </div>
+
+
+
+                            <div class="col-md-4">
+                                <label>Jam Mulai <span class="text-danger">*</span></label>
+
+                                @if ($start_time)
+                                    <input type="text" class="form-control" value="{{ $start_time }}" disabled>
+                                @else
+                                    <select wire:model="start_time"
+                                        class="form-select @error('start_time') is-invalid @enderror">
+                                        <option value="" hidden>Pilih Jam Mulai</option>
+                                        @foreach ($timeSlots as $ts)
+                                            <option value="{{ $ts }}">{{ $ts }}</option>
+                                        @endforeach
+                                    </select>
+                                @endif
                             </div>
 
                             <div class="col-md-4">
                                 <label>Jam Selesai <span class="text-danger">*</span></label>
-                                <select wire:model="end_time"
-                                    class="form-select @error('end_time') is-invalid @enderror">
-                                    <option value="">Pilih Jam Selesai</option>
-
-                                    @foreach ($timeSlots as $index => $ts)
-                                        @if (isset($timeSlots[$index + 1]))
-                                            @php $endTs = $timeSlots[$index + 1]; @endphp
-                                            @if ($start_time === $ts)
-                                                <option value="{{ $endTs }}">{{ $endTs }}</option>
-                                            @endif
-                                        @endif
-                                    @endforeach
-                                </select>
-                                @error('end_time')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <input type="text" class="form-control" value="{{ $end_time }}" disabled>
                             </div>
 
                         </div>

@@ -19,9 +19,9 @@ class Dashboard extends Component
     public $showModal = false;
     public $selectedSchedule = null;
     public $selectedDate = null;
-    public $modalStudents = [];     
-    public $modalAttendances = [];  
-    public $notes = [];  
+    public $modalStudents = [];
+    public $modalAttendances = [];
+    public $notes = [];
 
     // Filter
     public $search = '';
@@ -39,9 +39,9 @@ class Dashboard extends Component
     {
         $this->selectedSchedule = $scheduleId;
         $this->selectedDate = $this->filterDate ?: now()->format('Y-m-d');
-        
+
         $schedule = Schedule::with('studyGroup')->findOrFail($scheduleId);
-        
+
         $this->modalStudents = Student::with('user')
             ->where('study_group_id', $schedule->study_group_id)
             ->orderBy('nis')
@@ -100,31 +100,25 @@ class Dashboard extends Component
             return;
         }
 
-            $teacher = Auth::user()->teacher;
+        $teacher = Auth::user()->teacher;
+        foreach ($this->modalAttendances as $studentId => $data) {
 
-            foreach ($this->modalAttendances as $studentId => $data) {
-                if ($data['status']) {
-                    Attendance::updateOrCreate(
-                        [
-                            'schedule_id' => $this->selectedSchedule,
-                            'student_id' => $studentId,
-                            'attendance_date' => $this->selectedDate,
-                        ],
-                        [
-                            'teacher_id' => $teacher->id,
-                            'status' => $data['status'],
-                                    'note' => $data['note'] ?: null
+            Attendance::updateOrCreate(
+                [
+                    'schedule_id' => $this->selectedSchedule,
+                    'student_id' => $studentId,
+                    'attendance_date' => $this->selectedDate,
+                ],
+                [
+                    'teacher_id' => $teacher->id,
+                    'status' => $data['status'],
+                    'note' => $data['note'] ?? null
+                ]
+            );
+        }
 
-                        ]
-                    );
-                } elseif ($data['id']) {
-                    // Delete if status is cleared
-                    Attendance::find($data['id'])?->delete();
-                }
-            }
-
-            session()->flash('success', 'Absensi berhasil disimpan!');
-            $this->closeModal();
+        session()->flash('success', 'Absensi berhasil disimpan!');
+        $this->closeModal();
     }
 
     public function closeModal()
@@ -188,16 +182,15 @@ class Dashboard extends Component
         ];
 
         $this->notes = Attendance::whereIn('id', $attendances->pluck('id'))
-        ->pluck('note', 'id')
-        ->map(function ($note) {
-            return $note ?? '';
-        })->toArray();
+            ->pluck('note', 'id')
+            ->map(function ($note) {
+                return $note ?? '';
+            })->toArray();
 
-    return view('livewire.teacher.dashboard', [
-        'attendances' => $attendances,
-        'schedules' => $schedules,
-        'stats' => $stats,
-    ]);
+        return view('livewire.teacher.dashboard', [
+            'attendances' => $attendances,
+            'schedules' => $schedules,
+            'stats' => $stats,
+        ]);
+    }
 }
-}
-

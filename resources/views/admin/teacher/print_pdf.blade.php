@@ -137,7 +137,7 @@
 <body>
 
     <div class="header">
-        <h1>{{ config('app.name', 'SMKN 1') }}</h1>
+        <h1>ABSENSIKU</h1>
         <h2>DAFTAR GURU</h2>
     </div>
 
@@ -177,7 +177,7 @@
                         @else
                             <div class="no-foto">No Photo</div>
                         @endif
-                    </td>
+                    </td>`
                     <td><strong>{{ $teacher['user']['name'] }}</strong></td>
                     <td>{{ $teacher['user']['username'] }}</td>
                     <td class="text-center">{{ $teacher['nip'] ?? '-' }}</td>

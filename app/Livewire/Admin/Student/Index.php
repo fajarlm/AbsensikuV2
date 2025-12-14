@@ -195,7 +195,7 @@ class Index extends Component
             'user_id' => $user->id,
             'nis' => $this->nis,
             'study_group_id' => $this->study_group_id,
-            'verification_code' => $this->nis,
+            'verification_code' => encrypt($this->nis),
             'nisn' => $this->nisn,
             'first_log' => 0
         ];
@@ -209,16 +209,12 @@ class Index extends Component
         }
 
         $this->resetForm();
-        $this->dispatch('close-modal');
+        // $this->dispatch('closeModal');
+        $this->dispatch('closeModal');
+
     }
 
-    public function deleteConfirm($id)
-    {
-        $student = Student::with('user')->findOrFail($id);
-        $this->student_id = $student->id;
-        $this->user_id = $student->user_id;
-        $this->name = $student->user->name;
-    }
+   
 
     public function delete()
     {
@@ -234,6 +230,14 @@ class Index extends Component
 
         session()->flash('success', 'Data siswa berhasil dihapus!');
         $this->resetForm();
+    }
+
+     public function deleteConfirm($id)
+    {
+        $student = Student::findOrFail($id);
+        $this->student_id = $student->id;
+        $this->user_id = $student->user_id;
+        $this->name = $student->user->name;
     }
 
     public function resetForm()
@@ -254,48 +258,46 @@ class Index extends Component
         $this->resetValidation();
     }
 
-    public function render()
-    {
-        $query = Student::with(['user', 'studyGroup'])
-            ->whereHas('user', function ($q) {
-                $q->when($this->search, function ($query) {
-                    $query->where('name', 'like', '%' . $this->search . '%')
-                        ->orWhere('username', 'like', '%' . $this->search . '%');
-                })
-                    ->when($this->filterGender, function ($query) {
-                        $query->where('gender', $this->filterGender);
-                    });
-            })
-            ->when($this->search, function ($query) {
-                $query->orWhere('nis', 'like', '%' . $this->search . '%');
-            })
-            ->when($this->filterGrade, function ($query) {
-                $query->whereHas('studyGroup', function ($q) {
-                    $q->where('grade', $this->filterGrade);
-                });
-            })
-            ->when($this->filterMajor, function ($query) {
-                $query->whereHas('studyGroup', function ($q) {
-                    $q->where('major', $this->filterMajor);
-                });
-            })
-            ->latest();
+  public function render()
+{
+    $students = Student::with(['user', 'studyGroup'])
+        ->whereHas('user', function ($q) {
+            $q->where('role', 'student') // cuma user role student
+              ->when($this->search, function ($query) {
+                  $query->where(function ($q2) {
+                      $q2->where('name', 'like', '%'.$this->search.'%')
+                         ->orWhere('username', 'like', '%'.$this->search.'%');
+                  });
+              })
+              ->when($this->filterGender, fn($query) => 
+                    $query->where('gender', $this->filterGender)
+              );
+        })
+        ->when($this->search, fn($q) =>
+            $q->where('nis', 'like', '%'.$this->search.'%')
+        )
+        ->when($this->filterGrade, function ($q) {
+            $q->whereHas('studyGroup', fn($sg) =>
+                $sg->where('grade', $this->filterGrade)
+            );
+        })
+        ->when($this->filterMajor, function ($q) {
+            $q->whereHas('studyGroup', fn($sg) =>
+                $sg->where('major', $this->filterMajor)
+            );
+        })
+        ->paginate($this->perPage);
+        // dd($students);
+    $stats = [
+        'total'  => Student::count(),
+        'male'   => Student::whereHas('user', fn($q) => $q->where('gender', 'male'))->count(),
+        'female' => Student::whereHas('user', fn($q) => $q->where('gender', 'female'))->count(),
+    ];
 
-        $students = $query->paginate($this->perPage);
-
-        $allStudents = Student::with('user')->get();
-
-
-        $stats = [
-            'total'  => Student::count(),
-            'male'   => Student::whereHas('user', fn($q) => $q->where('gender', 'male'))->count(),
-            'female' => Student::whereHas('user', fn($q) => $q->where('gender', 'female'))->count(),
-        ];
-
-        return view('livewire.admin.student.index', [
-            'students' => $students,
-            'stats' => $stats,
-            'StudyGroups' => StudyGroup::all(),
-        ]);
-    }
+    return view('livewire.admin.student.index', [
+        'students' => $students,
+        'stats' => $stats,
+        'StudyGroups' => StudyGroup::all(),
+    ]);
+}
 }

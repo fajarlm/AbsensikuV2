@@ -1,6 +1,5 @@
 <div>
     <div class="container-fluid py-4">
-        <!-- Flash Messages -->
         @if (session()->has('success'))
             <div class="alert alert-success alert-dismissible fade show" role="alert">
                 <i class="bi bi-check-circle-fill me-2"></i>
@@ -170,7 +169,7 @@
                         <tbody>
                             @forelse ($students as $index => $student)
                                 <tr wire:key="student-{{ $student->id }}">
-                                    <td>{{ $students->firstItem() + $index }}</td>
+                                    <td>{{ $loop->iteration }}</td>
                                     <td>
                                         @if ($student->user->profile)
                                             <img src="{{ asset('storage/' . $student->user->profile) }}"
@@ -189,9 +188,9 @@
                                     <td><span class="badge bg-secondary">{{ $student->nis }}</span></td>
                                     <td>{{ $student->user->username }}</td>
                                     <td>
-                                        @if ($student->studyGroup)
+                                        @if ($student)
                                             <span class="badge bg-success">
-                                                {{ $student->studyGroup->major }}
+                                                {{ $student->major }}
                                                 {{ $student->studyGroup->grade }}-{{ $student->studyGroup->class_number }}
                                             </span>
                                         @else
@@ -237,7 +236,6 @@
                     </table>
                 </div>
 
-                <!-- Pagination -->
                 <div class="d-flex justify-content-between align-items-center mt-3">
                     <div class="text-muted small">
                         Menampilkan {{ $students->firstItem() ?? 0 }} - {{ $students->lastItem() ?? 0 }} dari
@@ -249,7 +247,6 @@
         </div>
     </div>
 
-    <!-- Create/Edit Modal -->
     <div class="modal fade" id="studentModal" tabindex="-1" wire:ignore.self>
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
@@ -364,7 +361,7 @@
                             </div>
                             <div class="col-md-12">
                                 <label class="form-label">NISN <span class="text-danger">*</span></label>
-                                <input wire:model="nisn" type="text"
+                                <input wire:model="nisn" type="number"
                                     class="form-control @error('nisn') is-invalid @enderror"
                                     placeholder="Masukkan NISN">
                                 @error('nisn')
@@ -373,7 +370,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">NIS <span class="text-danger">*</span></label>
-                                <input wire:model="nis" type="text"
+                                <input wire:model="nis" type="number"
                                     class="form-control @error('nis') is-invalid @enderror"
                                     placeholder="Masukkan NIS">
                                 @error('nis')

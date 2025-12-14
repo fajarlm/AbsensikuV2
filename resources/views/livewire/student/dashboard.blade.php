@@ -25,7 +25,8 @@
                             </p>
                             <p class="text-muted mb-0">
                                 <i class="bi bi-people me-1"></i>
-                                {{ $student->studyGroup->name ?? 'N/A' }} Class
+                                {{ $student->studyGroup->major }}
+                                {{ $student->studyGroup->grade }}-{{ $student->studyGroup->class_number }} Class
                             </p>
                         </div>
                         <div class="col-auto">
@@ -89,7 +90,7 @@
                                         <div class="day-header">
                                             <h6 class="mb-0">{{ $day }}</h6>
                                         </div>
-                                        <div class="row">
+                                        <div class="row mt-2">
                                             @foreach ($daySchedules as $schedule)
                                                 @php
                                                     $attendanceStatus = $this->getAttendanceStatus(
@@ -118,19 +119,15 @@
                                                                     -
                                                                     {{ \Carbon\Carbon::parse($schedule->end_time)->format('H:i') }}
                                                                 </small>
-                                                                <small class="text-muted d-block">
-                                                                    <i class="bi bi-geo-alt me-1"></i>
-                                                                    {{ $schedule->room ?? 'N/A' }}
-                                                                </small>
                                                             </div>
                                                             <div class="d-flex align-items-center mt-3">
-                                                                <div class="avatar-circle-sm bg-light text-dark me-2">
-                                                                    {{ substr($schedule->teacher->name ?? 'T', 0, 1) }}
-                                                                </div>
+                                                                {{-- <div class="avatar-circle-sm bg-light text-dark me-2">
+                                                                    {{ substr($schedule->subject->teacher->user->name ?? 'T', 0, 1) }}
+                                                                </div> --}}
                                                                 <div>
                                                                     <small class="text-muted d-block">Teacher</small>
                                                                     <small
-                                                                        class="fw-medium">{{ $schedule->teacher->name ?? 'N/A' }}</small>
+                                                                        class="fw-medium">{{ $schedule->subject->teacher->user->name ?? 'N/A' }}</small>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -151,7 +148,7 @@
                 </div>
             @elseif($activeTab === 'attendance')
                 <!-- Attendance History Tab -->
-                <div class="card shadow-sm border-0">
+                {{-- <div class="card shadow-sm border-0">
                     <div class="card-header bg-white">
                         <div class="row align-items-center">
                             <div class="col-md-6">
@@ -253,7 +250,7 @@
                             </div>
                         @endif
                     </div>
-                </div>
+                </div> --}}
             @elseif($activeTab === 'profile')
                 <!-- Profile Tab -->
                 <div class="row">
@@ -265,11 +262,11 @@
                                     Profile Photo
                                 </h5>
                             </div>
-                            <div class="card-body text-center">
-                                @if ($photoPreview)
-                                    <img src="{{ $photoPreview }}" alt="Photo Preview" class="photo-preview mb-3">
+                            {{-- <div class="card-body text-center">
+                               @if ($photoPreview)
+                                    <img src="{{ $photoPreview }}" alt="Photo Preview" wire:model="photoPreview" class="photo-preview mb-3">
                                 @elseif(auth()->user()->profile)
-                                    <img src="{{ asset('storage/' . auth()->user()->profile) }}" alt="Current Photo"
+                                    <img src="{{ asset('storage/' . auth()->user()->profile) }}" wire:model="photoPreview" alt="Current Photo"
                                         class="photo-preview mb-3">
                                 @else
                                     <div class="avatar-placeholder mx-auto mb-3"
@@ -277,6 +274,7 @@
                                         {{ substr(auth()->user()->name, 0, 1) }}
                                     </div>
                                 @endif
+
 
                                 <div class="mb-3">
                                     <label for="photo" class="photo-upload-area">
@@ -298,10 +296,85 @@
                                         Remove Photo
                                     </button>
                                 @endif
+                            </div> --}}
+                            <div class="card-body text-center">
+                                <!-- Preview Photo -->
+                                @if ($photoPreview)
+                                    <img src="{{ $photoPreview }}" alt="Photo Preview" class="photo-preview mb-3"
+                                        style="width: 150px; height: 150px; object-fit: cover; border-radius: 50%; border: 3px solid #0d6efd;">
+                                @elseif(auth()->user()->profile)
+                                    <img src="{{ asset('storage/' . auth()->user()->profile) }}" alt="Current Photo"
+                                        class="photo-preview mb-3"
+                                        style="width: 150px; height: 150px; object-fit: cover; border-radius: 50%; border: 3px solid #0d6efd;">
+                                @else
+                                    <div class="avatar-placeholder mx-auto mb-3 bg-primary text-white d-flex align-items-center justify-content-center"
+                                        style="width: 150px; height: 150px; border-radius: 50%; font-size: 3rem;">
+                                        {{ substr(auth()->user()->name, 0, 1) }}
+                                    </div>
+                                @endif
+
+                                <div class="mb-3">
+                                    <label for="photo" class="photo-upload-area"
+                                        style="cursor: pointer; display: block; padding: 20px; border: 2px dashed #dee2e6; border-radius: 8px;">
+                                        <i class="bi bi-cloud-arrow-up display-6 text-muted mb-2 d-block"></i>
+                                        <p class="mb-1">Click to upload photo</p>
+                                        <small class="text-muted">JPG, PNG max 2MB</small>
+                                    </label>
+                                    <input type="file" id="photo" class="d-none" wire:model.live="profile"
+                                        accept="image/jpeg,image/png,image/jpg">
+
+                                    <div wire:loading wire:target="profile" class="mt-2">
+                                        <span class="spinner-border spinner-border-sm text-primary me-2"></span>
+                                        <small class="text-muted">Uploading...</small>
+                                    </div>
+
+                                    @error('profile')
+                                        <small class="text-danger d-block mt-2">{{ $message }}</small>
+                                    @enderror
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    @if ($profile || $photoPreview)
+                                        <button class="btn btn-success" wire:click="updatePhotoOnly"
+                                            wire:loading.attr="disabled" wire:target="updatePhotoOnly">
+                                            <span wire:loading.remove wire:target="updatePhotoOnly">
+                                                <i class="bi bi-check-circle me-1"></i>
+                                                Save Photo
+                                            </span>
+                                            <span wire:loading wire:target="updatePhotoOnly">
+                                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                                Saving...
+                                            </span>
+                                        </button>
+                                    @endif
+
+                                    @if (auth()->user()->profile || $profile)
+                                        <button class="btn btn-outline-danger" wire:click="removePhoto"
+                                            wire:loading.attr="disabled" wire:target="removePhoto"
+                                            onclick="return confirm('Are you sure you want to remove your profile photo?')">
+                                            <span wire:loading.remove wire:target="removePhoto">
+                                                <i class="bi bi-trash me-1"></i>
+                                                Remove Photo
+                                            </span>
+                                            <span wire:loading wire:target="removePhoto">
+                                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                                Removing...
+                                            </span>
+                                        </button>
+                                    @endif
+                                </div>
+
+                                <!-- Success Message -->
+                                @if (session()->has('photo_message'))
+                                    <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
+                                        <i class="bi bi-check-circle me-2"></i>
+                                        {{ session('photo_message') }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    </div>
+                                @endif
                             </div>
                         </div>
 
-                        <!-- Student Information -->
                     </div>
                     <div class="card col-md-8 profile-card shadow-sm ">
                         <div class="card-header bg-white">
@@ -326,7 +399,7 @@
                             <div class="info-row">
                                 <div class="info-label">Verification Code</div>
                                 <div class="info-value">
-                                    <p>{{ $student->verification_code ?"*******" :'N/A' }}</p>
+                                    <p>{{ $student->verification_code ? '*******' : 'N/A' }}</p>
                                 </div>
                             </div>
                         </div>
@@ -338,7 +411,7 @@
                         </div>
                     </div>
 
-                     <div class="col-lg-12 mt-4 {{ $showEdit ? 'd-block' : 'd-none' }}" >
+                    <div class="col-lg-12 mt-4 {{ $showEdit ? 'd-block' : 'd-none' }}">
                         <div class="card profile-card shadow-sm">
                             <div class="card-header bg-white">
                                 <h5 class="card-title mb-0">
@@ -361,26 +434,32 @@
                                             <label class="form-label">Full Name *</label>
                                             <input type="text"
                                                 class="form-control @error('name') is-invalid @enderror"
-                                                wire:model="name" >
+                                                wire:model="name">
                                             @error('name')
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
                                         </div>
 
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label">username</label>
+                                            <label class="form-label">Username</label>
                                             <input type="username"
                                                 class="form-control @error('username') is-invalid @enderror"
-                                                wire:model="username" >
+                                                wire:model="username">
                                             @error('username')
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
                                         </div>
                                         <div class="col-md-6 mb-3">
                                             <label class="form-label">verification code</label>
-                                            <input type="verification_code"
+                                            <span class="position-absolute top-50 end-0 translate-middle-y me-3"
+                                                style="cursor:pointer;" wire:click='toggleVerifi()'>
+                                                <i id="togglePasswordIcon" class="bi bi-eye-slash"></i>
+                                            </span>
+                                            <input type="{{ $showVerifi ? 'text' : 'password' }}"
                                                 class="form-control @error('verification_code') is-invalid @enderror"
-                                                wire:model="verification_code" >
+                                                wire:model="verification_code"
+                                                value="{{ auth()->user()->student->nis }}">
+
                                             @error('verification_code')
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
@@ -438,7 +517,7 @@
                             </div>
                         </div>
                     </div>
-                   
+
                 </div>
             @endif
         </div>

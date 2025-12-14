@@ -73,7 +73,7 @@ class Index extends Component
     // Reset Form
     public function resetForm()
     {
-        $this->reset([
+        $this->reset([  
             'subject_id',
             'teacher_id',
             'name',

@@ -21,12 +21,11 @@ class Index extends Component
     protected $paginationTheme = 'bootstrap';
     public $perPage = 10;
 
-    // Filter
     public $search = '';
     public $filterGender = '';
     public $filterStatus = '';
 
-    // Form Fields - User
+
     public $teacher_id;
     public $user_id;
     public $name;
@@ -37,14 +36,11 @@ class Index extends Component
     public $profile;
     public $oldProfile;
 
-    // Form Fields - Teacher Specific
     public $nip;
-    public $status = 'active'; // Default aktif
+    public $status = 'active';
 
-    // Modal State
     public $isEdit = false;
 
-    // Reset pagination when filter changes
     public function updatingSearch()
     {
         $this->resetPage();
@@ -151,47 +147,47 @@ class Index extends Component
     {
         $this->validate();
 
-            $userData = [
-                'name' => $this->name,
-                'username' => $this->username,
-                'gender' => $this->gender,
-                'role' => 'teacher',
-            ];
+        $userData = [
+            'name' => $this->name,
+            'username' => $this->username,
+            'gender' => $this->gender,
+            'role' => 'teacher',
+        ];
 
-            if ($this->password) {
-                $userData['password'] = Hash::make($this->password);
+        if ($this->password) {
+            $userData['password'] = Hash::make($this->password);
+        }
+
+        if ($this->profile) {
+            if ($this->oldProfile) {
+                Storage::disk('public')->delete($this->oldProfile);
             }
+            $userData['profile'] = $this->profile->store('profiles', 'public');
+        }
 
-            if ($this->profile) {
-                if ($this->oldProfile) {
-                    Storage::disk('public')->delete($this->oldProfile);
-                }
-                $userData['profile'] = $this->profile->store('profiles', 'public');
-            }
+        $teacherData = [
+            'nip' => $this->nip,
+            // 'status' => $this->status,
+        ];
 
-            $teacherData = [
-                'nip' => $this->nip,
-                // 'status' => $this->status,
-            ];
+        if ($this->isEdit) {
+            $user = User::findOrFail($this->user_id);
+            $user->update($userData);
 
-            if ($this->isEdit) {
-                $user = User::findOrFail($this->user_id);
-                $user->update($userData);
+            Teacher::where('id', $this->teacher_id)->update($teacherData);
 
-                Teacher::where('id', $this->teacher_id)->update($teacherData);
+            session()->flash('success', 'Data guru berhasil diperbarui!');
+        } else {
+            $user = User::create($userData);
 
-                session()->flash('success', 'Data guru berhasil diperbarui!');
-            } else {
-                $user = User::create($userData);
+            $teacherData['user_id'] = $user->id;
+            Teacher::create($teacherData);
 
-                $teacherData['user_id'] = $user->id;
-                Teacher::create($teacherData);
+            session()->flash('success', 'Data guru berhasil ditambahkan!');
+        }
 
-                session()->flash('success', 'Data guru berhasil ditambahkan!');
-            }
-
-            $this->resetForm();
-            $this->dispatch('closeModal');
+        $this->resetForm();
+        $this->dispatch('closeModal');
     }
 
     // Delete (Soft Delete)
@@ -207,12 +203,11 @@ class Index extends Component
 
     public function delete()
     {
+        $teacher = Teacher::with('user')->findOrFail($this->teacher_id);
+        $teacher->delete();
 
-            $teacher = Teacher::with('user')->findOrFail($this->teacher_id);
-            $teacher->delete();
-
-            session()->flash('success', 'Data guru berhasil dihapus!');
-            $this->resetForm();
+        session()->flash('success', 'Data guru berhasil dihapus!');
+        $this->resetForm();
     }
 
     public function exportPdf()
@@ -256,39 +251,29 @@ class Index extends Component
     // Restore (kalau mau ada fitur restore)
     public function restore($id)
     {
-        try {
-            $teacher = Teacher::withTrashed()->findOrFail($id);
-            $teacher->restore();
+        $teacher = Teacher::withTrashed()->findOrFail($id);
+        $teacher->restore();
 
-            session()->flash('success', 'Data guru berhasil dipulihkan!');
-        } catch (\Exception $e) {
-            session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
-        }
+        session()->flash('success', 'Data guru berhasil dipulihkan!');
     }
 
     // Force Delete (hapus permanen)
     public function forceDelete($id)
     {
-        try {
-            DB::beginTransaction();
 
-            $teacher = Teacher::withTrashed()->with('user')->findOrFail($id);
+        $teacher = Teacher::withTrashed()->with('user')->findOrFail($id);
 
-            // Delete profile photo
-            if ($teacher->user->profile) {
-                Storage::disk('public')->delete($teacher->user->profile);
-            }
-
-            // Force delete
-            $teacher->forceDelete();
-            $teacher->user->delete(); // atau forceDelete() kalau user juga soft delete
-
-            DB::commit();
-            session()->flash('success', 'Data guru berhasil dihapus permanen!');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        // Delete profile photo
+        if ($teacher->user->profile) {
+            Storage::disk('public')->delete($teacher->user->profile);
         }
+
+        // Force delete
+        $teacher->forceDelete();
+        $teacher->user->delete(); // atau forceDelete() kalau user juga soft delete
+
+        DB::commit();
+        session()->flash('success', 'Data guru berhasil dihapus permanen!');
     }
 
     // Get Statistics
@@ -327,7 +312,7 @@ class Index extends Component
             })
             ->latest()
             ->paginate($this->perPage);
-
+        // dd($teachers);
         return view('livewire.admin.teacher.index', [
             'teachers' => $teachers,
             'stats' => $this->stats,

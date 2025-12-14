@@ -13,17 +13,17 @@ use Maatwebsite\Excel\Facades\Excel;
 class Index extends Component
 {
     public $selectedGroup = null;
+    public $selectedClassName = ''; // Tambahan untuk display nama kelas
 
-    // FILTER
     public $filterGrade = '';
     public $filterMajor = '';
     public $searchClass = '';
 
-    // Form
     public $schedule_id;
     public $study_group_id;
     public $subject_id;
     public $day;
+    public $daySelected;
     public $start_time;
     public $end_time;
     public $isEdit = false;
@@ -67,7 +67,7 @@ class Index extends Component
 
     public function resetForm()
     {
-        $this->reset(['schedule_id', 'study_group_id', 'subject_id', 'day', 'start_time', 'end_time', 'isEdit']);
+        $this->reset(['schedule_id', 'study_group_id', 'subject_id', 'day', 'start_time', 'end_time', 'isEdit', 'selectedClassName']);
         $this->resetValidation();
     }
 
@@ -89,6 +89,12 @@ class Index extends Component
         $this->start_time     = $schedule->start_time->format('H:i');
         $this->end_time       = $schedule->end_time->format('H:i');
         $this->isEdit         = true;
+
+        // Set nama kelas untuk display
+        $group = StudyGroup::find($schedule->study_group_id);
+        if ($group) {
+            $this->selectedClassName = "{$group->grade} {$group->major} {$group->class_number}";
+        }
 
         $this->dispatch('openModal');
     }
@@ -117,31 +123,44 @@ class Index extends Component
         $this->resetForm();
         $this->dispatch('closeModal', modal: 'scheduleModal');
     }
-    // Tambahkan method ini di dalam class Index
-    public function openScheduleModal($groupId, $day, $startTime, $scheduleId = null)
+
+    public function updatedStartTime($value)
+    {
+        $index = array_search($value, $this->timeSlots);
+
+        if ($index !== false && isset($this->timeSlots[$index + 1])) {
+            $this->end_time = $this->timeSlots[$index + 1];
+        } else {
+            $this->end_time = null;
+        }
+    }
+
+    public function openScheduleModal($groupId, $day, $start, $scheduleId = null)
     {
         $this->resetForm();
 
         $this->study_group_id = $groupId;
         $this->day            = $day;
-        $this->start_time     = $startTime;
+        $this->start_time     = $start;
+        
+        // Set nama kelas untuk display
+        $group = StudyGroup::find($groupId);
+        if ($group) {
+            $this->selectedClassName = "{$group->grade} {$group->major} {$group->class_number}";
+        }
+        
+        // Set end time
+        $index = array_search($start, $this->timeSlots);
+        $this->end_time = $this->timeSlots[$index + 1] ?? null;
 
         if ($scheduleId) {
+            $this->isEdit = true;
+            $this->schedule_id = $scheduleId;
+
             $schedule = Schedule::find($scheduleId);
-            if ($schedule) {
-                $this->schedule_id = $schedule->id;
-                $this->subject_id  = $schedule->subject_id;
-                $this->end_time    = $schedule->end_time->format('H:i');
-                $this->isEdit      = true;
-            }
-        } else {
-            // atur end time dari start time selang 45 menit
-            $end = \Carbon\Carbon::createFromFormat('H:i', $startTime)->addMinutes(45);
-            $this->end_time = $end->format('H:i');
-            $this->isEdit = false;
+            $this->subject_id = $schedule->subject_id;
         }
 
-        // Buka modal
         $this->dispatch('openModal');
     }
 
@@ -158,13 +177,8 @@ class Index extends Component
         '14:30'
     ];
 
-
-    // Tambahkan ini di dalam class App\Livewire\Admin\Schedule\Index
-
     public function exportPdf()
     {
-        // $group = StudyGroup::with(['schedules.subject.teacher.user'])->findOrFail($groupId);
-
         $group = StudyGroup::with(['schedules.subject.teacher.user'])->get();
         $data = [
             'groups' => $group,
@@ -177,17 +191,13 @@ class Index extends Component
         }, 'jadwal_Pelajaran.pdf');
     }
 
-
-
     public function exportExcel()
     {
         return Excel::download(new ScheduleExport, 'jadwal.xlsx');
     }
 
-
     public function render()
     {
-        // Query semua kelas + jadwal SEKALIGUS di sini
         $groups = StudyGroup::with(['schedules.subject.teacher.user'])
             ->when($this->filterGrade, fn($q) => $q->where('grade', $this->filterGrade))
             ->when($this->filterMajor, fn($q) => $q->where('major', $this->filterMajor))
@@ -197,8 +207,6 @@ class Index extends Component
             ->orderBy('grade')->orderBy('major')->orderBy('class_number')
             ->get();
 
-
-        // Ambil jadwal dari kelas yang dipilih (kalau ada)
         $selectedSchedules = collect();
         $selectedGroupName = null;
 
@@ -209,7 +217,6 @@ class Index extends Component
                 $selectedSchedules = $group->schedules;
             }
         }
-
 
         return view('livewire.admin.schedule.index', [
             'allGroups' => StudyGroup::orderBy('grade')->orderBy('major')->get(),

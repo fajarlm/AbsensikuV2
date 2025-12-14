@@ -45,63 +45,49 @@ class Trash extends Component
 
     public function restore($id)
     {
-        try {
-            DB::transaction(function () use ($id) {
-                $user = User::onlyTrashed()->findOrFail($id);
-                $user->restore();
+        $user = User::onlyTrashed()->findOrFail($id);
+        $user->restore();
 
-                // Restore related records
-                if ($user->student) {
-                    $user->student()->onlyTrashed()->restore();
-                }
-
-                if ($user->teacher) {
-                    $user->teacher()->onlyTrashed()->restore();
-                }
-            });
-
-            $this->dispatchBrowserEvent('notify', [
-                'type' => 'success',
-                'message' => 'User berhasil dipulihkan!'
-            ]);
-
-            $this->reset(['selectedUsers', 'selectAll']);
-        } catch (\Exception $e) {
-            $this->dispatchBrowserEvent('notify', [
-                'type' => 'error',
-                'message' => 'Gagal memulihkan user: ' . $e->getMessage()
-            ]);
+        if ($user->student) {
+            $user->student()->onlyTrashed()->restore();
         }
-    }
 
-   public function forceDelete($id)
-{
-    $user = User::onlyTrashed()->findOrFail($id);
-
-    if ($user->student) {
-        // Hapus attendance dulu
-        $user->student->attendances()->forceDelete();
-
-        // Hapus student
-        $user->student()->forceDelete();
-    }
-
-    if ($user->teacher) {
-        $user->teacher()->forceDelete();
-    }
-
-    // Hapus foto
-    if ($user->profile) {
-        $path = public_path('storage/' . $user->profile);
-        if (file_exists($path)) {
-            unlink($path);
+        if ($user->teacher) {
+            $user->teacher()->onlyTrashed()->restore();
         }
+
+
+        $this->reset(['selectedUsers', 'selectAll']);
     }
 
-    $user->forceDelete();
-}
+    public function forceDelete($id)
+    {
+        $user = User::onlyTrashed()->findOrFail($id);
 
-     public function restoreSelected()
+        if ($user->student) {
+            // Hapus attendance dulu
+            $user->student->attendances()->forceDelete();
+
+            // Hapus student
+            $user->student()->forceDelete();
+        }
+
+        if ($user->teacher) {
+            $user->teacher()->forceDelete();
+        }
+
+        // Hapus foto
+        if ($user->profile) {
+            $path = public_path('storage/' . $user->profile);
+            if (file_exists($path)) {
+                unlink($path);
+            }
+        }
+
+        $user->forceDelete();
+    }
+
+    public function restoreSelected()
     {
         $users = User::onlyTrashed()->whereIn('id', $this->selectedUsers)->get();
 
@@ -124,44 +110,37 @@ class Trash extends Component
 
     public function deleteSelected()
     {
-        try {
-            DB::transaction(function () {
-                $users = User::onlyTrashed()->whereIn('id', $this->selectedUsers)->get();
+        DB::transaction(function () {
+            $users = User::onlyTrashed()->whereIn('id', $this->selectedUsers)->get();
 
-                foreach ($users as $user) {
-                    // Force delete related records
-                    if ($user->student) {
-                        $user->student()->forceDelete();
-                    }
-
-                    if ($user->teacher) {
-                        $user->teacher()->forceDelete();
-                    }
-
-                    // Delete profile image
-                    if ($user->profile) {
-                        $path = public_path('storage/' . $user->profile);
-                        if (file_exists($path)) {
-                            unlink($path);
-                        }
-                    }
-
-                    $user->forceDelete();
+            foreach ($users as $user) {
+                // Force delete related records
+                if ($user->student) {
+                    $user->student()->forceDelete();
                 }
-            });
 
-            $this->dispatchBrowserEvent('notify', [
-                'type' => 'success',
-                'message' => count($this->selectedUsers) . ' user berhasil dihapus permanen!'
-            ]);
+                if ($user->teacher) {
+                    $user->teacher()->forceDelete();
+                }
 
-            $this->reset(['selectedUsers', 'selectAll']);
-        } catch (\Exception $e) {
-            $this->dispatchBrowserEvent('notify', [
-                'type' => 'error',
-                'message' => 'Gagal menghapus user: ' . $e->getMessage()
-            ]);
-        }
+                // Delete profile image
+                if ($user->profile) {
+                    $path = public_path('storage/' . $user->profile);
+                    if (file_exists($path)) {
+                        unlink($path);
+                    }
+                }
+
+                $user->forceDelete();
+            }
+        });
+
+        $this->dispatchBrowserEvent('notify', [
+            'type' => 'success',
+            'message' => count($this->selectedUsers) . ' user berhasil dihapus permanen!'
+        ]);
+
+        $this->reset(['selectedUsers', 'selectAll']);
     }
 
     public function updatedSelectAll($value)
