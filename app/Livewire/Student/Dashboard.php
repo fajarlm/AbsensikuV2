@@ -46,6 +46,7 @@ class Dashboard extends Component
         $this->showVerifi = !$this->showVerifi;
     }
 
+
     public function rules()
     {
         return [

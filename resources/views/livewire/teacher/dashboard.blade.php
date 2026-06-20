@@ -136,6 +136,8 @@
                                     {{ $schedule->subject->name ?? 'N/A' }}
                                     ({{ $schedule->studyGroup->grade }} {{ $schedule->studyGroup->major }}
                                     {{ $schedule->studyGroup->class_number }})
+                                    {{ \Carbon\Carbon::parse($schedule->start_time)->format('H:i') }} -
+                                    {{ \Carbon\Carbon::parse($schedule->end_time)->format('H:i') }}
                                 </option>
                             @endforeach
                         </select>
@@ -176,10 +178,27 @@
                                                 {{ \Carbon\Carbon::parse($schedule->end_time)->format('H:i') }}
                                             </small>
                                         </div>
+                                        @php
+                                            $today = now()->dayOfWeekIso;
+                                            $dayMap = [
+                                                'Senin' => 1,
+                                                'Selasa' => 2,
+                                                'Rabu' => 3,
+                                                'Kamis' => 4,
+                                                'Jumat' => 5,
+                                                'Sabtu' => 6,
+                                                'Minggu' => 7,
+                                            ];
+                                            $isToday = $today === ($dayMap[$schedule->day] ?? null);
+                                        @endphp
+
                                         <button wire:click="openAttendanceModal({{ $schedule->id }})"
-                                            class="btn btn-sm btn-primary" title="Isi Absensi">
+                                            class="btn btn-sm {{ $isToday ? 'btn-primary' : 'btn-secondary' }}"
+                                            @disabled(!$isToday)
+                                            title="{{ $isToday ? 'Isi Absensi' : 'Hanya bisa dilihat' }}">
                                             <i class="bi bi-pencil-square"></i>
                                         </button>
+
                                     </div>
                                 </div>
                             @empty
@@ -268,20 +287,20 @@
                                                     </span>
                                                 @endif
                                             </td>
-                                           <td>
-                            <input type="text"
-                                   class="form-control form-control-sm border-0 shadow-none"
-                                   style="background: transparent; width: 100%;"
-                                   wire:model.live.debounce.500ms="notes.{{ $attendance->id }}"
-                                   placeholder="Klik untuk tambah catatan..."
-                                   wire:keydown.enter="$set('notes.{{ $attendance->id }}', $event.target.value)">
-                            
-                            @if($attendance->note && empty($notes[$attendance->id]))
-                                <small class="text-success fst-italic d-block mt-1">
-                                    {{ $attendance->note }}
-                                </small>
-                            @endif
-                        </td>
+                                            <td>
+                                                <input type="text"
+                                                    class="form-control form-control-sm border-0 shadow-none"
+                                                    style="background: transparent; width: 100%;"
+                                                    wire:model.live.debounce.500ms="notes.{{ $attendance->id }}"
+                                                    placeholder="Klik untuk tambah catatan..."
+                                                    wire:keydown.enter="$set('notes.{{ $attendance->id }}', $event.target.value)">
+
+                                                @if ($attendance->note && empty($notes[$attendance->id]))
+                                                    <small class="text-success fst-italic d-block mt-1">
+                                                        {{ $attendance->note }}
+                                                    </small>
+                                                @endif
+                                            </td>
                                         </tr>
                                     @empty
                                         <tr>
@@ -519,7 +538,7 @@
             </div>
         </div>
     @endif
-  
+
 </div>
 
 @push('script')

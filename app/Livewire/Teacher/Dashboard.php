@@ -35,42 +35,93 @@ class Dashboard extends Component
     }
 
     // Open modal untuk isi/edit absensi
+    // public function openAttendanceModal($scheduleId)
+    // {
+    //     $this->selectedSchedule = $scheduleId;
+    //     $this->selectedDate = $this->filterDate ?: now()->format('Y-m-d');
+
+    //     $schedule = Schedule::with('studyGroup')->findOrFail($scheduleId);
+
+    //     $this->modalStudents = Student::with('user')
+    //         ->where('study_group_id', $schedule->study_group_id)
+    //         ->orderBy('nis')
+    //         ->get();
+
+    //     $existingAttendances = Attendance::where('schedule_id', $scheduleId)
+    //         ->whereDate('attendance_date', $this->selectedDate)
+    //         ->get()
+    //         ->keyBy('student_id');
+
+    //     $this->modalAttendances = [];
+    //     foreach ($this->modalStudents as $student) {
+    //         if (isset($existingAttendances[$student->id])) {
+    //             $this->modalAttendances[$student->id] = [
+    //                 'id' => $existingAttendances[$student->id]->id,
+    //                 'status' => $existingAttendances[$student->id]->status,
+    //                 'note' => $existingAttendances[$student->id]->note,
+    //             ];
+    //         } else {
+    //             $this->modalAttendances[$student->id] = [
+    //                 'id' => null,
+    //                 'status' => null,
+    //                 'note' => null,
+    //             ];
+    //         }
+    //     }
+
+    //     $this->showModal = true;
+    // }
+
     public function openAttendanceModal($scheduleId)
-    {
-        $this->selectedSchedule = $scheduleId;
-        $this->selectedDate = $this->filterDate ?: now()->format('Y-m-d');
+{
+    $schedule = Schedule::findOrFail($scheduleId);
 
-        $schedule = Schedule::with('studyGroup')->findOrFail($scheduleId);
+    $today = now()->dayOfWeekIso ;
 
-        $this->modalStudents = Student::with('user')
-            ->where('study_group_id', $schedule->study_group_id)
-            ->orderBy('nis')
-            ->get();
+    $dayMap = [
+        'Senin'  => 1,
+        'Selasa' => 2,
+        'Rabu'   => 3,
+        'Kamis'  => 4,
+        'Jumat'  => 5,
+        'Sabtu'  => 6,
+        'Minggu' => 7,
+    ];
 
-        $existingAttendances = Attendance::where('schedule_id', $scheduleId)
-            ->whereDate('attendance_date', $this->selectedDate)
-            ->get()
-            ->keyBy('student_id');
+    $scheduleDay = $dayMap[$schedule->day] ?? null;
 
-        $this->modalAttendances = [];
-        foreach ($this->modalStudents as $student) {
-            if (isset($existingAttendances[$student->id])) {
-                $this->modalAttendances[$student->id] = [
-                    'id' => $existingAttendances[$student->id]->id,
-                    'status' => $existingAttendances[$student->id]->status,
-                    'note' => $existingAttendances[$student->id]->note,
-                ];
-            } else {
-                $this->modalAttendances[$student->id] = [
-                    'id' => null,
-                    'status' => null,
-                    'note' => null,
-                ];
-            }
-        }
-
-        $this->showModal = true;
+    if ($today !== $scheduleDay) {
+        session()->flash('error', 'Absensi hanya bisa diisi di hari jadwal.');
+        return;
     }
+
+    // ✅ lanjut normal
+    $this->selectedSchedule = $scheduleId;
+    $this->selectedDate = now()->format('Y-m-d');
+
+    $this->modalStudents = Student::with('user')
+        ->where('study_group_id', $schedule->study_group_id)
+        ->orderBy('nis')
+        ->get();
+
+    $existingAttendances = Attendance::where('schedule_id', $scheduleId)
+        ->whereDate('attendance_date', $this->selectedDate)
+        ->get()
+        ->keyBy('student_id');
+
+    $this->modalAttendances = [];
+
+    foreach ($this->modalStudents as $student) {
+        $this->modalAttendances[$student->id] = [
+            'id'     => $existingAttendances[$student->id]->id ?? null,
+            'status' => $existingAttendances[$student->id]->status ?? null,
+            'note'   => $existingAttendances[$student->id]->note ?? null,
+        ];
+    }
+
+    $this->showModal = true;
+}
+
 
     public function setStatus($studentId, $status)
     {
@@ -135,19 +186,22 @@ class Dashboard extends Component
 
     public function render()
     {
+        $days = ['Senin'=> 1, 'Selasa'=> 2, 'Rabu'=> 3, 'Kamis'=> 4, 'Jumat'=> 5];
+
         $user = Auth::id();
         $teacherId = Teacher::where('user_id', $user)->value('id');
+        $now = now()->format('Y-m-d');
 
-        // Get teacher's schedules
-        $schedules = Schedule::with(['subject.teacher', 'studyGroup'])
-            ->whereHas('subject.teacher', function ($query) use ($teacherId) {
-                $query->where('id', $teacherId);
-            })
-            ->get();
+        $schedules = schedule::with(['subject.teacher', 'studyGroup'])->get();
+        // dd($schedules);
+        // $schedules = Schedule::with(['subject.teacher', 'studyGroup'])
+        //     ->whereHas('subject.teacher', function ($q) {
+        //         $q->whereDate('');
+        //     })
+        //     ->get();
 
         $scheduleIds = $schedules->pluck('id')->toArray();
 
-        // Get attendances with filters (ini tetap pakai nama attendances)
         $query = Attendance::with(['student.user', 'schedule.subject', 'schedule.studyGroup'])
             ->whereIn('schedule_id', $scheduleIds)
             ->when($this->search, function ($query) {

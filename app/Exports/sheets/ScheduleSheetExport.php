@@ -56,19 +56,6 @@ class ScheduleSheetExport implements FromCollection, WithHeadings, WithMapping, 
     {
         $this->no++;
         
-        // Konversi hari ke bahasa Indonesia
-        $daysInIndonesian = [
-            'Monday' => 'Senin',
-            'Tuesday' => 'Selasa',
-            'Wednesday' => 'Rabu',
-            'Thursday' => 'Kamis',
-            'Friday' => 'Jumat',
-            'Saturday' => 'Sabtu',
-            'Sunday' => 'Minggu'
-        ];
-        
-        $day = $daysInIndonesian[$schedule->day] ?? $schedule->day;
-        
         // Hitung durasi
         $start = Carbon::parse($schedule->start_time);
         $end = Carbon::parse($schedule->end_time);
@@ -76,7 +63,7 @@ class ScheduleSheetExport implements FromCollection, WithHeadings, WithMapping, 
         
         return [
             $this->no,
-            $day,
+            $$schedule->day,
             $schedule->start_time,
             $schedule->end_time,
             $schedule->studyGroup->major . ' ' . 
