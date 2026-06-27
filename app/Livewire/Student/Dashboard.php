@@ -301,7 +301,7 @@ class Dashboard extends Component
     }
 
     public function getAttendanceStatusClass($status)
-    {
+    { 
         $classes = [
             'present' => 'bg-success',
             'absent' => 'bg-danger',
