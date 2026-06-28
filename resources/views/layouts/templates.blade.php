@@ -92,7 +92,7 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top">
         <div class="container-fluid mx-3">
             <a class="navbar-brand d-flex align-items-center"
-                href="{{ Auth::user()->role === 'teacher' ? route('teacher.dashboard') : route('student.dashboard') }}">
+                href="{{ Auth::user()->role === 'teacher' ? route('teacher.dashboard') : route('student.dashboard') }}" wire:navigate>
                 <i class="bi bi-mortarboard-fill me-2"></i>
                 Absensiku
             </a>
@@ -108,55 +108,22 @@
                 <ul class="navbar-nav mx-auto">
                     @if (Auth::user()->role === 'teacher')
                         <!-- Teacher Navigation -->
-                            {{-- <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('teacher.dashboard') ? 'active' : '' }}"
-                                    href="{{ route('teacher.dashboard') }}">
-                                    <i class="bi bi-speedometer2 me-1"></i>
-                                    Dashboard
-                                </a>
-                            </li> --}}
-                        {{-- <li class="nav-item">
-                            <a class="nav-link" href="#">
-                                <i class="bi bi-calendar-week me-1"></i>
-                                Schedules
-                            </a>
-                        </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
-                                <i class="bi bi-people me-1"></i>
-                                Students
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">
-                                <i class="bi bi-file-earmark-text me-1"></i>
-                                Reports
-                            </a>
-                        </li> --}}
-                    @elseif(Auth::user()->role === 'student')
-                        <!-- Student Navigation -->
-                        {{-- <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('student.dashboard') ? 'active' : '' }}"
-                                href="{{ route('student.dashboard') }}">
+                            <a class="nav-link {{ request()->routeIs('teacher.dashboard') ? 'active' : '' }}"
+                                href="{{ route('teacher.dashboard') }}" wire:navigate>
                                 <i class="bi bi-speedometer2 me-1"></i>
                                 Dashboard
                             </a>
-                        </li> --}}
-                        {{-- <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('student.schedule') ? 'active' : '' }}" 
-                               href="#">
-                                <i class="bi bi-calendar-week me-1"></i>
-                                My Schedule
+                        </li>
+                    @elseif(Auth::user()->role === 'student')
+                        <!-- Student Navigation -->
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('student.dashboard') ? 'active' : '' }}"
+                                href="{{ route('student.dashboard') }}" wire:navigate>
+                                <i class="bi bi-speedometer2 me-1"></i>
+                                Dashboard
                             </a>
-                        </li> --}}
-
-                        {{-- <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('student.profile') ? 'active' : '' }}"
-                                href="{{ route('student.profile') }}">
-                                <i class="bi bi-person-circle me-1"></i>
-                                Profile
-                            </a>
-                        </li> --}}
+                        </li>
                     @endif
                 </ul>
 
@@ -222,12 +189,12 @@
                             </div>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end shadow">
-                            {{-- <li>
+                            <li>
                                 <a class="dropdown-item"
-                                    href="{{ Auth::user()->role === 'teacher' ? route('teacher.profile') : route('student.profile') }}">
+                                    href="{{ Auth::user()->role === 'teacher' ? route('teacher.profile') : route('student.profile') }}" wire:navigate>
                                     <i class="bi bi-person me-2"></i>Profile
                                 </a>
-                            </li> --}}
+                            </li>
                            
                             <li>
                                 <hr class="dropdown-divider">
@@ -247,6 +214,7 @@
     <!-- Main Content -->
     <main class="main-container">
         @yield('content')
+        {{ $slot ?? '' }}
     </main>
 
     <!-- Footer -->

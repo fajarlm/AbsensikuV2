@@ -66,7 +66,7 @@
                                         </div>
 
                                         <div class="d-flex justify-content-between align-items-center">
-                                            <a href="{{ route('login') }}" class="btn btn-link text-decoration-none">
+                                            <a href="{{ route('login') }}" class="btn btn-link text-decoration-none" wire:navigate>
                                                 <i class="bi bi-arrow-left me-1"></i> Kembali ke login
                                             </a>
                                             <button type="submit" class="btn btn-primary" wire:loading.attr="disabled">

@@ -50,7 +50,7 @@
                     @endif
                 </form>
                 <div class="d-flex justify-content-center align-items-center mt-4">
-                    <a href="{{ route('forgot-password') }}" class="text-primary me-2">
+                    <a href="{{ route('forgot-password') }}" class="text-primary me-2" wire:navigate>
                         Lupa Password?
                     </a>
                     <span class="text-muted">atau hubungi admin</span>
