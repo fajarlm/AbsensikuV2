@@ -36,6 +36,15 @@ class Student extends Model
         return $this->hasMany(Attendance::class);
     }
 
+    /**
+     * Relasi ke Submission
+     * Satu student bisa punya banyak pengajuan online
+     */
+    public function submissions()
+    {
+        return $this->hasMany(Submission::class);
+    }
+
     public function studyGroup()
     {
         return $this->belongsTo(StudyGroup::class);
