@@ -24,13 +24,13 @@
                         </div>
                         <p class="mb-1 opacity-90 d-flex align-items-center justify-content-center justify-content-md-start gap-2">
                             <i class="bi bi-person-badge"></i>
-                            <span>NIS: {{ $student->nis ?? 'N/A' }}</span>
+                            <span>NIS: {{ $student?->nis ?? 'N/A' }}</span>
                             <span class="opacity-50">|</span>
-                            <span>NISN: {{ $student->nisn ?? 'N/A' }}</span>
+                            <span>NISN: {{ $student?->nisn ?? 'N/A' }}</span>
                         </p>
                         <p class="mb-0 opacity-90 d-flex align-items-center justify-content-center justify-content-md-start gap-2">
                             <i class="bi bi-mortarboard"></i>
-                            <span>{{ $student->studyGroup->name ?? 'N/A' }} ({{ $student->studyGroup->major ?? 'N/A' }})</span>
+                            <span>{{ $student?->studyGroup?->name ?? 'N/A' }} ({{ $student?->studyGroup?->major ?? 'N/A' }})</span>
                         </p>
                     </div>
                     <div class="col-12 col-md-auto text-center text-md-end mt-3 mt-md-0">
@@ -427,19 +427,19 @@
                                 </h4>
                                 <div class="info-row-item">
                                     <div class="info-row-label">Nomor Induk Siswa (NIS)</div>
-                                    <div class="info-row-value">{{ $student->nis ?? 'N/A' }}</div>
+                                    <div class="info-row-value">{{ $student?->nis ?? 'N/A' }}</div>
                                 </div>
                                 <div class="info-row-item">
                                     <div class="info-row-label">Nomor Induk Siswa Nasional (NISN)</div>
-                                    <div class="info-row-value">{{ $student->nisn ?? 'N/A' }}</div>
+                                    <div class="info-row-value">{{ $student?->nisn ?? 'N/A' }}</div>
                                 </div>
                                 <div class="info-row-item">
                                     <div class="info-row-label">Rombongan Belajar (Kelas)</div>
-                                    <div class="info-row-value">{{ $student->studyGroup->name ?? 'N/A' }}</div>
+                                    <div class="info-row-value">{{ $student?->studyGroup?->name ?? 'N/A' }}</div>
                                 </div>
                                 <div class="info-row-item">
                                     <div class="info-row-label">Jurusan</div>
-                                    <div class="info-row-value">{{ $student->studyGroup->major ?? 'N/A' }}</div>
+                                    <div class="info-row-value">{{ $student?->studyGroup?->major ?? 'N/A' }}</div>
                                 </div>
                                 <div class="info-row-item">
                                     <div class="info-row-label">Status Akun</div>
@@ -567,3 +567,30 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    document.addEventListener('livewire:init', () => {
+        Livewire.on('swal:error', (event) => {
+            const data = Array.isArray(event) ? event[0] : event;
+            Swal.fire({
+                icon: 'error',
+                title: data.title || 'Error',
+                text: data.text || 'Terjadi kesalahan.',
+                confirmButtonColor: '#4f46e5'
+            });
+        });
+
+        Livewire.on('swal:success', (event) => {
+            const data = Array.isArray(event) ? event[0] : event;
+            Swal.fire({
+                icon: 'success',
+                title: data.title || 'Sukses',
+                text: data.text || 'Operasi berhasil.',
+                confirmButtonColor: '#4f46e5'
+            });
+        });
+    });
+</script>
+@endpush
+

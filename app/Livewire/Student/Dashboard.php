@@ -83,27 +83,41 @@ class Dashboard extends Component
 
     public function mount()
     {
-        $user = Auth::user();
-        $this->name = $user->name;
-        $this->username = $user->username;
-        // $this->verification_code = decrypt($user->student->verification_code);
-        $this->verification_code = $user->student->verification_code;
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                throw new \Exception('Sesi Anda telah berakhir. Silakan login kembali.');
+            }
 
-        $this->studentData = Student::with(['studyGroup', 'user'])->where('user_id', $user->id)->first();
+            $this->name = $user->name;
+            $this->username = $user->username;
+            $this->verification_code = $user->student->verification_code ?? '';
 
-        $this->selectedDate = now()->format('Y-m-d');
-        $this->start_date = now()->format('Y-m-d');
-        $this->end_date = now()->format('Y-m-d');
+            $this->studentData = Student::with(['studyGroup', 'user'])->where('user_id', $user->id)->first();
 
-        if ($user->profile) {
-            $this->photoPreview = asset('storage/' . $user->profile);
+            if (!$this->studentData) {
+                throw new \Exception('Akun Anda tidak terhubung dengan data murid.');
+            }
+
+            $this->selectedDate = now()->format('Y-m-d');
+            $this->start_date = now()->format('Y-m-d');
+            $this->end_date = now()->format('Y-m-d');
+
+            if ($user->profile) {
+                $this->photoPreview = asset('storage/' . $user->profile);
+            }
+        } catch (\Exception $e) {
+            $this->dispatch('swal:error', [
+                'title' => 'Gagal Memuat Data',
+                'text' => $e->getMessage()
+            ]);
         }
     }
 
     public function render()
     {
         $user = Auth::user();
-        $student = Student::with(['studyGroup', 'user'])->where('user_id', $user->id)->first();
+        $student = $user ? Student::with(['studyGroup', 'user'])->where('user_id', $user->id)->first() : null;
 
         $data = [
             'student' => $student,
@@ -116,9 +130,9 @@ class Dashboard extends Component
                 break;
 
             case 'submission':
-                $data['submissions'] = Submission::where('student_id', $student->id)
-                    ->orderBy('created_at', 'desc')
-                    ->get();
+                $data['submissions'] = $student
+                    ? Submission::where('student_id', $student->id)->orderBy('created_at', 'desc')->get()
+                    : collect();
                 break;
 
             case 'profile':
@@ -173,13 +187,23 @@ class Dashboard extends Component
         $this->resetValidation();
 
         if ($tab === 'profile') {
-            $user = Auth::user();
-            $this->name = $user->name;
-            $this->username = $user->username;
-            $this->verification_code = $user->student->verification_code ?? '';
+            try {
+                $user = Auth::user();
+                if (!$user) {
+                    throw new \Exception('Sesi Anda telah berakhir.');
+                }
+                $this->name = $user->name;
+                $this->username = $user->username;
+                $this->verification_code = $user->student->verification_code ?? '';
 
-            if ($user->profile) {
-                $this->photoPreview = asset('storage/' . $user->profile);
+                if ($user->profile) {
+                    $this->photoPreview = asset('storage/' . $user->profile);
+                }
+            } catch (\Exception $e) {
+                $this->dispatch('swal:error', [
+                    'title' => 'Kesalahan',
+                    'text' => $e->getMessage()
+                ]);
             }
         }
     }
@@ -208,6 +232,10 @@ class Dashboard extends Component
         $user = Auth::user();
 
         try {
+            if (!$user) {
+                throw new \Exception('Sesi Anda telah berakhir.');
+            }
+
             if ($user->profile && Storage::disk('public')->exists($user->profile)) {
                 Storage::disk('public')->delete($user->profile);
             }
@@ -217,14 +245,20 @@ class Dashboard extends Component
             $user->save();
 
             $this->photoPreview = asset('storage/' . $path);
-
             $this->profile = null;
 
-            session()->flash('photo_message', 'Profile photo updated successfully!');
-
             $this->dispatch('profile-updated');
+
+            $this->dispatch('swal:success', [
+                'title' => 'Foto Diperbarui!',
+                'text' => 'Foto profil Anda berhasil disimpan.'
+            ]);
         } catch (\Exception $e) {
             $this->addError('profile', 'Failed to upload photo: ' . $e->getMessage());
+            $this->dispatch('swal:error', [
+                'title' => 'Gagal Mengunggah',
+                'text' => $e->getMessage()
+            ]);
         }
     }
 
@@ -248,11 +282,19 @@ class Dashboard extends Component
 
             if (!Hash::check($this->current_password, $user->password)) {
                 $this->addError('current_password', 'Current password is incorrect');
+                $this->dispatch('swal:error', [
+                    'title' => 'Kata Sandi Salah',
+                    'text' => 'Kata sandi saat ini yang Anda masukkan salah.'
+                ]);
                 return;
             }
         }
 
         try {
+            if (!$user) {
+                throw new \Exception('Sesi Anda telah berakhir.');
+            }
+
             $user->name = $this->name;
             $user->username = $this->username;
 
@@ -268,12 +310,18 @@ class Dashboard extends Component
             $user->save();
 
             $this->reset(['current_password', 'new_password', 'new_password_confirmation']);
-
-            session()->flash('profile_message', 'Profile updated successfully!');
-
             $this->showEdit = false;
+
+            $this->dispatch('swal:success', [
+                'title' => 'Profil Diperbarui!',
+                'text' => 'Informasi profil dan pengaturan akun berhasil disimpan.'
+            ]);
         } catch (\Exception $e) {
             $this->addError('name', 'Failed to update profile: ' . $e->getMessage());
+            $this->dispatch('swal:error', [
+                'title' => 'Gagal Menyimpan',
+                'text' => $e->getMessage()
+            ]);
         }
     }
 
@@ -282,6 +330,10 @@ class Dashboard extends Component
         $user = Auth::user();
 
         try {
+            if (!$user) {
+                throw new \Exception('Sesi Anda telah berakhir.');
+            }
+
             if ($user->profile) {
                 if (Storage::disk('public')->exists($user->profile)) {
                     Storage::disk('public')->delete($user->profile);
@@ -293,12 +345,19 @@ class Dashboard extends Component
                 $this->photoPreview = null;
                 $this->profile = null;
 
-                session()->flash('photo_message', 'Profile photo removed successfully!');
-
                 $this->dispatch('profile-updated');
+
+                $this->dispatch('swal:success', [
+                    'title' => 'Foto Dihapus!',
+                    'text' => 'Foto profil Anda berhasil dihapus.'
+                ]);
             }
         } catch (\Exception $e) {
             $this->addError('profile', 'Failed to remove photo: ' . $e->getMessage());
+            $this->dispatch('swal:error', [
+                'title' => 'Gagal Menghapus',
+                'text' => $e->getMessage()
+            ]);
         }
     }
 
@@ -361,40 +420,76 @@ class Dashboard extends Component
             'attachment.max' => 'Ukuran lampiran maksimal 2MB.',
         ]);
 
-        $attachmentPath = null;
-        if ($this->attachment) {
-            $attachmentPath = $this->attachment->store('submissions', 'public');
+        try {
+            if (!$this->studentData) {
+                throw new \Exception('Profil akademik Anda tidak ditemukan. Tidak dapat mengirim pengajuan.');
+            }
+
+            $attachmentPath = null;
+            if ($this->attachment) {
+                $attachmentPath = $this->attachment->store('submissions', 'public');
+            }
+
+            Submission::create([
+                'student_id' => $this->studentData->id,
+                'type' => $this->submission_type,
+                'start_date' => $this->start_date,
+                'end_date' => $this->end_date,
+                'reason' => $this->reason,
+                'attachment' => $attachmentPath,
+                'status' => 'pending',
+            ]);
+
+            $this->reset(['submission_type', 'reason', 'attachment']);
+            $this->start_date = now()->format('Y-m-d');
+            $this->end_date = now()->format('Y-m-d');
+
+            $this->dispatch('swal:success', [
+                'title' => 'Pengajuan Dikirim!',
+                'text' => 'Pengajuan online Anda berhasil dikirim dan menunggu persetujuan.'
+            ]);
+        } catch (\Exception $e) {
+            $this->dispatch('swal:error', [
+                'title' => 'Gagal Mengirim',
+                'text' => $e->getMessage()
+            ]);
         }
-
-        Submission::create([
-            'student_id' => $this->studentData->id,
-            'type' => $this->submission_type,
-            'start_date' => $this->start_date,
-            'end_date' => $this->end_date,
-            'reason' => $this->reason,
-            'attachment' => $attachmentPath,
-            'status' => 'pending',
-        ]);
-
-        $this->reset(['submission_type', 'reason', 'attachment']);
-        $this->start_date = now()->format('Y-m-d');
-        $this->end_date = now()->format('Y-m-d');
-
-        session()->flash('submission_message', 'Pengajuan online berhasil dikirim!');
     }
 
     public function cancelSubmission($id)
     {
-        $submission = Submission::where('student_id', $this->studentData->id)
-            ->where('id', $id)
-            ->first();
-
-        if ($submission && $submission->status === 'pending') {
-            if ($submission->attachment && Storage::disk('public')->exists($submission->attachment)) {
-                Storage::disk('public')->delete($submission->attachment);
+        try {
+            if (!$this->studentData) {
+                throw new \Exception('Profil akademik Anda tidak ditemukan.');
             }
-            $submission->delete();
-            session()->flash('submission_message', 'Pengajuan berhasil dibatalkan!');
+
+            $submission = Submission::where('student_id', $this->studentData->id)
+                ->where('id', $id)
+                ->first();
+
+            if ($submission) {
+                if ($submission->status !== 'pending') {
+                    throw new \Exception('Pengajuan ini sudah diproses dan tidak dapat dibatalkan.');
+                }
+
+                if ($submission->attachment && Storage::disk('public')->exists($submission->attachment)) {
+                    Storage::disk('public')->delete($submission->attachment);
+                }
+                
+                $submission->delete();
+
+                $this->dispatch('swal:success', [
+                    'title' => 'Dibatalkan!',
+                    'text' => 'Pengajuan Anda berhasil dibatalkan.'
+                ]);
+            } else {
+                throw new \Exception('Pengajuan tidak ditemukan.');
+            }
+        } catch (\Exception $e) {
+            $this->dispatch('swal:error', [
+                'title' => 'Gagal Membatalkan',
+                'text' => $e->getMessage()
+            ]);
         }
     }
 
