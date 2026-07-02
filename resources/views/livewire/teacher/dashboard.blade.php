@@ -263,7 +263,7 @@
                                                 </span>
                                             </td>
                                             <td>{{ $attendance->schedule->subject->name }}</td>
-                                            <td>{{ \Carbon\Carbon::parse($attendance->date)->format('d M Y') }}</td>
+                                            <td>{{ \Carbon\Carbon::parse($attendance->attendance_date)->format('d M Y') }}</td>
                                             <td class="text-center">
                                                 @if ($attendance->status == 'present')
                                                     <span class="badge bg-success">
@@ -554,3 +554,4 @@
         });
     </script>
 @endpush
+

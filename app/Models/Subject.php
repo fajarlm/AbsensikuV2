@@ -32,6 +32,6 @@ class Subject extends Model
      */
     public function schedules()
     {
-        return $this->hasMany(schedule::class);
+        return $this->hasMany(Schedule::class);
     }
 }
