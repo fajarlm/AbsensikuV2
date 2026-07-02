@@ -83,41 +83,56 @@ class Dashboard extends Component
 
     public function mount()
     {
-        try {
-            $user = Auth::user();
-            if (!$user) {
-                throw new \Exception('Sesi Anda telah berakhir. Silakan login kembali.');
-            }
+        $user = Auth::user();
+        if (!$user) {
+            $this->dispatch('swal:alert', [
+                'title' => 'Error!',
+                'text' => 'User tidak terautentikasi.',
+                'icon' => 'error'
+            ]);
+            return;
+        }
 
-            $this->name = $user->name;
-            $this->username = $user->username;
-            $this->verification_code = $user->student->verification_code ?? '';
+        $this->name = $user->name;
+        $this->username = $user->username;
 
-            $this->studentData = Student::with(['studyGroup', 'user'])->where('user_id', $user->id)->first();
-
-            if (!$this->studentData) {
-                throw new \Exception('Akun Anda tidak terhubung dengan data murid.');
-            }
-
+        $student = Student::with(['studyGroup', 'user'])->where('user_id', $user->id)->first();
+        if (!$student) {
+            $this->dispatch('swal:alert', [
+                'title' => 'Data Siswa Tidak Ditemukan!',
+                'text' => 'Akun Anda tidak terhubung dengan data siswa mana pun. Silakan hubungi admin sekolah.',
+                'icon' => 'error'
+            ]);
+            $this->verification_code = '';
             $this->selectedDate = now()->format('Y-m-d');
             $this->start_date = now()->format('Y-m-d');
             $this->end_date = now()->format('Y-m-d');
+            return;
+        }
 
-            if ($user->profile) {
-                $this->photoPreview = asset('storage/' . $user->profile);
-            }
-        } catch (\Exception $e) {
-            $this->dispatch('swal:error', [
-                'title' => 'Gagal Memuat Data',
-                'text' => $e->getMessage()
-            ]);
+        $this->verification_code = $student->verification_code;
+        $this->studentData = $student;
+
+        $this->selectedDate = now()->format('Y-m-d');
+        $this->start_date = now()->format('Y-m-d');
+        $this->end_date = now()->format('Y-m-d');
+
+        if ($user->profile) {
+            $this->photoPreview = asset('storage/' . $user->profile);
         }
     }
 
     public function render()
     {
         $user = Auth::user();
-        $student = $user ? Student::with(['studyGroup', 'user'])->where('user_id', $user->id)->first() : null;
+        if (!$user) {
+            return view('livewire.student.dashboard', [
+                'student' => null,
+                'today' => now()->format('Y-m-d'),
+            ]);
+        }
+
+        $student = Student::with(['studyGroup', 'user'])->where('user_id', $user->id)->first();
 
         $data = [
             'student' => $student,
@@ -187,23 +202,13 @@ class Dashboard extends Component
         $this->resetValidation();
 
         if ($tab === 'profile') {
-            try {
-                $user = Auth::user();
-                if (!$user) {
-                    throw new \Exception('Sesi Anda telah berakhir.');
-                }
-                $this->name = $user->name;
-                $this->username = $user->username;
-                $this->verification_code = $user->student->verification_code ?? '';
+            $user = Auth::user();
+            $this->name = $user->name;
+            $this->username = $user->username;
+            $this->verification_code = $user->student->verification_code ?? '';
 
-                if ($user->profile) {
-                    $this->photoPreview = asset('storage/' . $user->profile);
-                }
-            } catch (\Exception $e) {
-                $this->dispatch('swal:error', [
-                    'title' => 'Kesalahan',
-                    'text' => $e->getMessage()
-                ]);
+            if ($user->profile) {
+                $this->photoPreview = asset('storage/' . $user->profile);
             }
         }
     }
@@ -232,10 +237,6 @@ class Dashboard extends Component
         $user = Auth::user();
 
         try {
-            if (!$user) {
-                throw new \Exception('Sesi Anda telah berakhir.');
-            }
-
             if ($user->profile && Storage::disk('public')->exists($user->profile)) {
                 Storage::disk('public')->delete($user->profile);
             }
@@ -245,19 +246,18 @@ class Dashboard extends Component
             $user->save();
 
             $this->photoPreview = asset('storage/' . $path);
+
             $this->profile = null;
 
-            $this->dispatch('profile-updated');
+            session()->flash('photo_message', 'Profile photo updated successfully!');
 
-            $this->dispatch('swal:success', [
-                'title' => 'Foto Diperbarui!',
-                'text' => 'Foto profil Anda berhasil disimpan.'
-            ]);
+            $this->dispatch('profile-updated');
         } catch (\Exception $e) {
             $this->addError('profile', 'Failed to upload photo: ' . $e->getMessage());
-            $this->dispatch('swal:error', [
-                'title' => 'Gagal Mengunggah',
-                'text' => $e->getMessage()
+            $this->dispatch('swal:alert', [
+                'title' => 'Gagal Mengunggah Foto!',
+                'text' => $e->getMessage(),
+                'icon' => 'error'
             ]);
         }
     }
@@ -282,19 +282,11 @@ class Dashboard extends Component
 
             if (!Hash::check($this->current_password, $user->password)) {
                 $this->addError('current_password', 'Current password is incorrect');
-                $this->dispatch('swal:error', [
-                    'title' => 'Kata Sandi Salah',
-                    'text' => 'Kata sandi saat ini yang Anda masukkan salah.'
-                ]);
                 return;
             }
         }
 
         try {
-            if (!$user) {
-                throw new \Exception('Sesi Anda telah berakhir.');
-            }
-
             $user->name = $this->name;
             $user->username = $this->username;
 
@@ -310,17 +302,16 @@ class Dashboard extends Component
             $user->save();
 
             $this->reset(['current_password', 'new_password', 'new_password_confirmation']);
-            $this->showEdit = false;
 
-            $this->dispatch('swal:success', [
-                'title' => 'Profil Diperbarui!',
-                'text' => 'Informasi profil dan pengaturan akun berhasil disimpan.'
-            ]);
+            session()->flash('profile_message', 'Profile updated successfully!');
+
+            $this->showEdit = false;
         } catch (\Exception $e) {
             $this->addError('name', 'Failed to update profile: ' . $e->getMessage());
-            $this->dispatch('swal:error', [
-                'title' => 'Gagal Menyimpan',
-                'text' => $e->getMessage()
+            $this->dispatch('swal:alert', [
+                'title' => 'Gagal Memperbarui Profil!',
+                'text' => $e->getMessage(),
+                'icon' => 'error'
             ]);
         }
     }
@@ -330,10 +321,6 @@ class Dashboard extends Component
         $user = Auth::user();
 
         try {
-            if (!$user) {
-                throw new \Exception('Sesi Anda telah berakhir.');
-            }
-
             if ($user->profile) {
                 if (Storage::disk('public')->exists($user->profile)) {
                     Storage::disk('public')->delete($user->profile);
@@ -345,18 +332,16 @@ class Dashboard extends Component
                 $this->photoPreview = null;
                 $this->profile = null;
 
-                $this->dispatch('profile-updated');
+                session()->flash('photo_message', 'Profile photo removed successfully!');
 
-                $this->dispatch('swal:success', [
-                    'title' => 'Foto Dihapus!',
-                    'text' => 'Foto profil Anda berhasil dihapus.'
-                ]);
+                $this->dispatch('profile-updated');
             }
         } catch (\Exception $e) {
             $this->addError('profile', 'Failed to remove photo: ' . $e->getMessage());
-            $this->dispatch('swal:error', [
-                'title' => 'Gagal Menghapus',
-                'text' => $e->getMessage()
+            $this->dispatch('swal:alert', [
+                'title' => 'Gagal Menghapus Foto!',
+                'text' => $e->getMessage(),
+                'icon' => 'error'
             ]);
         }
     }
@@ -403,6 +388,15 @@ class Dashboard extends Component
 
     public function submitSubmission()
     {
+        if (!$this->studentData) {
+            $this->dispatch('swal:alert', [
+                'title' => 'Error!',
+                'text' => 'Data murid tidak tersedia. Tidak bisa mengirim pengajuan.',
+                'icon' => 'error'
+            ]);
+            return;
+        }
+
         $this->validate([
             'submission_type' => 'required|in:sick,permission,dispensed',
             'start_date' => 'required|date',
@@ -421,10 +415,6 @@ class Dashboard extends Component
         ]);
 
         try {
-            if (!$this->studentData) {
-                throw new \Exception('Profil akademik Anda tidak ditemukan. Tidak dapat mengirim pengajuan.');
-            }
-
             $attachmentPath = null;
             if ($this->attachment) {
                 $attachmentPath = $this->attachment->store('submissions', 'public');
@@ -444,51 +434,44 @@ class Dashboard extends Component
             $this->start_date = now()->format('Y-m-d');
             $this->end_date = now()->format('Y-m-d');
 
-            $this->dispatch('swal:success', [
-                'title' => 'Pengajuan Dikirim!',
-                'text' => 'Pengajuan online Anda berhasil dikirim dan menunggu persetujuan.'
-            ]);
+            session()->flash('submission_message', 'Pengajuan online berhasil dikirim!');
         } catch (\Exception $e) {
-            $this->dispatch('swal:error', [
-                'title' => 'Gagal Mengirim',
-                'text' => $e->getMessage()
+            $this->dispatch('swal:alert', [
+                'title' => 'Gagal Mengirim Pengajuan!',
+                'text' => $e->getMessage(),
+                'icon' => 'error'
             ]);
         }
     }
 
     public function cancelSubmission($id)
     {
-        try {
-            if (!$this->studentData) {
-                throw new \Exception('Profil akademik Anda tidak ditemukan.');
-            }
+        if (!$this->studentData) {
+            $this->dispatch('swal:alert', [
+                'title' => 'Error!',
+                'text' => 'Data murid tidak tersedia.',
+                'icon' => 'error'
+            ]);
+            return;
+        }
 
+        try {
             $submission = Submission::where('student_id', $this->studentData->id)
                 ->where('id', $id)
                 ->first();
 
-            if ($submission) {
-                if ($submission->status !== 'pending') {
-                    throw new \Exception('Pengajuan ini sudah diproses dan tidak dapat dibatalkan.');
-                }
-
+            if ($submission && $submission->status === 'pending') {
                 if ($submission->attachment && Storage::disk('public')->exists($submission->attachment)) {
                     Storage::disk('public')->delete($submission->attachment);
                 }
-                
                 $submission->delete();
-
-                $this->dispatch('swal:success', [
-                    'title' => 'Dibatalkan!',
-                    'text' => 'Pengajuan Anda berhasil dibatalkan.'
-                ]);
-            } else {
-                throw new \Exception('Pengajuan tidak ditemukan.');
+                session()->flash('submission_message', 'Pengajuan berhasil dibatalkan!');
             }
         } catch (\Exception $e) {
-            $this->dispatch('swal:error', [
-                'title' => 'Gagal Membatalkan',
-                'text' => $e->getMessage()
+            $this->dispatch('swal:alert', [
+                'title' => 'Gagal Membatalkan Pengajuan!',
+                'text' => $e->getMessage(),
+                'icon' => 'error'
             ]);
         }
     }

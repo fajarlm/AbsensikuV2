@@ -567,30 +567,3 @@
         </div>
     </div>
 </div>
-
-@push('scripts')
-<script>
-    document.addEventListener('livewire:init', () => {
-        Livewire.on('swal:error', (event) => {
-            const data = Array.isArray(event) ? event[0] : event;
-            Swal.fire({
-                icon: 'error',
-                title: data.title || 'Error',
-                text: data.text || 'Terjadi kesalahan.',
-                confirmButtonColor: '#4f46e5'
-            });
-        });
-
-        Livewire.on('swal:success', (event) => {
-            const data = Array.isArray(event) ? event[0] : event;
-            Swal.fire({
-                icon: 'success',
-                title: data.title || 'Sukses',
-                text: data.text || 'Operasi berhasil.',
-                confirmButtonColor: '#4f46e5'
-            });
-        });
-    });
-</script>
-@endpush
-
