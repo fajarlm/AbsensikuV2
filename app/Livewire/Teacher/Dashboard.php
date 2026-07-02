@@ -9,11 +9,15 @@ use App\Models\Teacher;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Submission;
 
 class Dashboard extends Component
 {
     use WithPagination;
     protected $paginationTheme = 'bootstrap';
+
+    // Tab state
+    public $activeTab = 'attendance';
 
     // Modal state
     public $showModal = false;
@@ -22,6 +26,12 @@ class Dashboard extends Component
     public $modalStudents = [];
     public $modalAttendances = [];
     public $notes = [];
+
+    // Submissions state
+    public $showReviewModal = false;
+    public $selectedSubmission = null;
+    public $teacherNote = '';
+    public $reviewStatus = '';
 
     // Filter
     public $search = '';
@@ -236,7 +246,19 @@ class Dashboard extends Component
                 'attendances' => new \Illuminate\Pagination\LengthAwarePaginator([], 0, 15),
                 'schedules' => collect(),
                 'stats' => ['total' => 0, 'present' => 0, 'absent' => 0, 'today' => 0],
+                'pendingSubmissionsCount' => 0,
+                'submissions' => new \Illuminate\Pagination\LengthAwarePaginator([], 0, 15),
             ]);
+        }
+
+        $pendingSubmissionsCount = Submission::where('status', 'pending')->count();
+        $submissions = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 15);
+
+        if ($this->activeTab === 'submissions') {
+            $submissions = Submission::with(['student.user', 'student.studyGroup'])
+                ->orderByRaw("FIELD(status, 'pending', 'approved', 'rejected')")
+                ->orderBy('created_at', 'desc')
+                ->paginate(15);
         }
 
         try {
@@ -296,6 +318,93 @@ class Dashboard extends Component
             'attendances' => $attendances,
             'schedules' => $schedules,
             'stats' => $stats,
+            'pendingSubmissionsCount' => $pendingSubmissionsCount,
+            'submissions' => $submissions,
         ]);
+    }
+
+    public function openReviewModal($submissionId, $status)
+    {
+        $this->selectedSubmission = Submission::with(['student.user', 'student.studyGroup'])->findOrFail($submissionId);
+        $this->reviewStatus = $status;
+        $this->teacherNote = '';
+        $this->showReviewModal = true;
+    }
+
+    public function closeReviewModal()
+    {
+        $this->showReviewModal = false;
+        $this->selectedSubmission = null;
+        $this->teacherNote = '';
+        $this->reviewStatus = '';
+    }
+
+    public function processReview()
+    {
+        if (!$this->selectedSubmission) {
+            return;
+        }
+
+        try {
+            $submission = $this->selectedSubmission;
+            $submission->status = $this->reviewStatus;
+            $submission->teacher_note = $this->teacherNote;
+            $submission->save();
+
+            // If approved, sync attendance records
+            if ($this->reviewStatus === 'approved') {
+                $start = \Carbon\Carbon::parse($submission->start_date);
+                $end = \Carbon\Carbon::parse($submission->end_date);
+                $student = $submission->student;
+                $schedules = Schedule::where('study_group_id', $student->study_group_id)->get();
+
+                for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
+                    $dayName = $this->getDayNameInIndonesian($date->dayOfWeekIso);
+                    $daySchedules = $schedules->where('day', $dayName);
+
+                    foreach ($daySchedules as $schedule) {
+                        Attendance::updateOrCreate(
+                            [
+                                'schedule_id' => $schedule->id,
+                                'student_id' => $student->id,
+                                'attendance_date' => $date->format('Y-m-d'),
+                            ],
+                            [
+                                'teacher_id' => Auth::user()->teacher->id,
+                                'status' => $submission->type,
+                                'note' => 'Izin Online: ' . ($submission->reason ?? '') . ' (' . ($this->teacherNote ?? '') . ')'
+                            ]
+                        );
+                    }
+                }
+            }
+
+            $this->dispatch('swal:alert', [
+                'title' => 'Berhasil!',
+                'text' => 'Status pengajuan berhasil diperbarui.',
+                'icon' => 'success'
+            ]);
+            $this->closeReviewModal();
+        } catch (\Exception $e) {
+            $this->dispatch('swal:alert', [
+                'title' => 'Gagal Memproses!',
+                'text' => $e->getMessage(),
+                'icon' => 'error'
+            ]);
+        }
+    }
+
+    private function getDayNameInIndonesian($dayOfWeekIso)
+    {
+        $map = [
+            1 => 'Senin',
+            2 => 'Selasa',
+            3 => 'Rabu',
+            4 => 'Kamis',
+            5 => 'Jumat',
+            6 => 'Sabtu',
+            7 => 'Minggu',
+        ];
+        return $map[$dayOfWeekIso] ?? 'Senin';
     }
 }

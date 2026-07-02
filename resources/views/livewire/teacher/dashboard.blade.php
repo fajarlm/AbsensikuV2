@@ -101,7 +101,26 @@
                 </div>
             </div>
         </div>
+        <!-- Navigation Tabs -->
+        <ul class="nav nav-tabs mb-4 px-1" id="teacherTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-semibold {{ $activeTab === 'attendance' ? 'active text-primary border-bottom border-primary border-3' : 'text-secondary' }}" 
+                        wire:click="$set('activeTab', 'attendance')" type="button" style="border: none; background: none;">
+                    <i class="bi bi-calendar-check me-2"></i>Kelola Kehadiran & Jadwal
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-semibold {{ $activeTab === 'submissions' ? 'active text-primary border-bottom border-primary border-3' : 'text-secondary' }}" 
+                        wire:click="$set('activeTab', 'submissions')" type="button" style="border: none; background: none;">
+                    <i class="bi bi-file-earmark-text me-2"></i>Pengajuan Izin Siswa
+                    @if($pendingSubmissionsCount > 0)
+                        <span class="badge bg-danger ms-1 rounded-pill">{{ $pendingSubmissionsCount }}</span>
+                    @endif
+                </button>
+            </li>
+        </ul>
 
+        @if ($activeTab === 'attendance')
         <!-- Filters -->
         <div class="card shadow mb-4">
             <div class="card-body">
@@ -323,6 +342,133 @@
                 </div>
             </div>
         </div>
+        @elseif ($activeTab === 'submissions')
+            <!-- Submissions Tab Content -->
+            <div class="card shadow border-0 p-4">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <div>
+                        <h4 class="fw-bold mb-1 text-dark">
+                            <i class="bi bi-file-earmark-text text-primary me-2"></i>Daftar Pengajuan Izin Siswa
+                        </h4>
+                        <p class="text-muted small mb-0">Tinjau dan setujui permohonan izin (Sakit, Izin, Dispensasi) dari siswa</p>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Siswa</th>
+                                <th>Tipe & Alasan</th>
+                                <th>Periode Tanggal</th>
+                                <th>Lampiran</th>
+                                <th>Status</th>
+                                <th>Catatan Guru</th>
+                                <th class="text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($submissions as $sub)
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="student-avatar bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; border-radius: 50%; font-weight: bold; font-size: 1.1rem;">
+                                                {{ substr($sub->student->user->name, 0, 1) }}
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0 fw-bold text-dark">{{ $sub->student->user->name }}</h6>
+                                                <small class="text-muted">NIS: {{ $sub->student->nis }} | Kelas: {{ $sub->student->studyGroup->grade }} {{ $sub->student->studyGroup->major }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            @if ($sub->type === 'sick')
+                                                <span class="badge bg-info text-dark mb-1"><i class="bi bi-heart-pulse me-1"></i>Sakit</span>
+                                            @elseif ($sub->type === 'permission')
+                                                <span class="badge bg-warning text-dark mb-1"><i class="bi bi-file-earmark-person me-1"></i>Izin</span>
+                                            @else
+                                                <span class="badge bg-secondary text-white mb-1"><i class="bi bi-award me-1"></i>Dispensasi</span>
+                                            @endif
+                                            <p class="mb-0 text-muted small" style="max-width: 250px; white-space: normal; word-break: break-all;">
+                                                {{ $sub->reason }}
+                                            </p>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="small fw-semibold text-dark">
+                                            <i class="bi bi-calendar-event text-muted me-1"></i>
+                                            {{ \Carbon\Carbon::parse($sub->start_date)->translatedFormat('d M Y') }} 
+                                            s.d. 
+                                            {{ \Carbon\Carbon::parse($sub->end_date)->translatedFormat('d M Y') }}
+                                        </div>
+                                        <div class="text-muted small">
+                                            ({{ \Carbon\Carbon::parse($sub->start_date)->diffInDays(\Carbon\Carbon::parse($sub->end_date)) + 1 }} Hari)
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @if ($sub->attachment)
+                                            <a href="{{ asset('storage/' . $sub->attachment) }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1">
+                                                <i class="bi bi-eye me-1"></i>Lihat File
+                                            </a>
+                                        @else
+                                            <span class="text-muted small italic">Tidak ada lampiran</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if ($sub->status === 'pending')
+                                            <span class="badge bg-warning-subtle text-warning border border-warning rounded-pill px-2.5 py-1">
+                                                <i class="bi bi-clock-history me-1"></i>Menunggu
+                                            </span>
+                                        @elseif ($sub->status === 'approved')
+                                            <span class="badge bg-success-subtle text-success border border-success rounded-pill px-2.5 py-1">
+                                                <i class="bi bi-check-circle me-1"></i>Disetujui
+                                            </span>
+                                        @else
+                                            <span class="badge bg-danger-subtle text-danger border border-danger rounded-pill px-2.5 py-1">
+                                                <i class="bi bi-x-circle me-1"></i>Ditolak
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <span class="small text-muted" style="max-width: 150px; display: inline-block; white-space: normal; word-break: break-all;">
+                                            {{ $sub->teacher_note ?? '-' }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        @if ($sub->status === 'pending')
+                                            <div class="d-flex gap-2 justify-content-center">
+                                                <button wire:click="openReviewModal({{ $sub->id }}, 'approved')" class="btn btn-sm btn-success px-2.5 py-1 rounded-3">
+                                                    <i class="bi bi-check-lg me-1"></i>Setujui
+                                                </button>
+                                                <button wire:click="openReviewModal({{ $sub->id }}, 'rejected')" class="btn btn-sm btn-outline-danger px-2.5 py-1 rounded-3">
+                                                    <i class="bi bi-x-lg me-1"></i>Tolak
+                                                </button>
+                                            </div>
+                                        @else
+                                            <span class="text-muted small"><i class="bi bi-lock-fill me-1"></i>Telah Ditinjau</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="text-center py-5 text-muted">
+                                        <i class="bi bi-file-earmark-x display-4 mb-2 d-block"></i>
+                                        <p class="mb-0">Tidak ada pengajuan izin siswa saat ini.</p>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                @if ($submissions->hasPages())
+                    <div class="mt-4">
+                        {{ $submissions->links() }}
+                    </div>
+                @endif
+            </div>
+        @endif
     </div>
 
     @if ($showModal)
@@ -532,6 +678,67 @@
                                 <span class="spinner-border spinner-border-sm me-1"></span>
                                 Menyimpan...
                             </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- Modal Review Pengajuan -->
+    @if ($showReviewModal && $selectedSubmission)
+        <div class="modal fade show d-block mt-5" tabindex="-1" style="background: rgba(0,0,0,0.5); z-index: 1050;">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content shadow border-0 rounded-4">
+                    <div class="modal-header border-0 pb-0 {{ $reviewStatus === 'approved' ? 'text-success' : 'text-danger' }}">
+                        <h5 class="modal-title fw-bold">
+                            @if ($reviewStatus === 'approved')
+                                <i class="bi bi-check-circle-fill me-2"></i>Setujui Pengajuan Izin
+                            @else
+                                <i class="bi bi-x-circle-fill me-2"></i>Tolak Pengajuan Izin
+                            @endif
+                        </h5>
+                        <button type="button" class="btn-close" wire:click="closeReviewModal"></button>
+                    </div>
+                    <div class="modal-body py-3">
+                        <div class="card bg-light border-0 p-3 mb-3 rounded-3">
+                            <div class="row g-2 small">
+                                <div class="col-4 text-muted">Siswa:</div>
+                                <div class="col-8 fw-semibold text-dark">{{ $selectedSubmission->student->user->name }}</div>
+                                
+                                <div class="col-4 text-muted">Kelas:</div>
+                                <div class="col-8 text-dark">{{ $selectedSubmission->student->studyGroup->grade }} {{ $selectedSubmission->student->studyGroup->major }}</div>
+                                
+                                <div class="col-4 text-muted">Tipe Izin:</div>
+                                <div class="col-8 text-dark">
+                                    @if ($selectedSubmission->type === 'sick')
+                                        <span class="badge bg-info text-dark">Sakit</span>
+                                    @elseif ($selectedSubmission->type === 'permission')
+                                        <span class="badge bg-warning text-dark">Izin</span>
+                                    @else
+                                        <span class="badge bg-secondary text-white">Dispensasi</span>
+                                    @endif
+                                </div>
+                                
+                                <div class="col-4 text-muted">Periode:</div>
+                                <div class="col-8 text-dark fw-medium">
+                                    {{ \Carbon\Carbon::parse($selectedSubmission->start_date)->translatedFormat('d M Y') }} s.d. {{ \Carbon\Carbon::parse($selectedSubmission->end_date)->translatedFormat('d M Y') }}
+                                </div>
+                                
+                                <div class="col-4 text-muted">Alasan:</div>
+                                <div class="col-8 text-dark italic">"{{ $selectedSubmission->reason }}"</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold small text-dark">Catatan Guru (Opsional)</label>
+                            <textarea class="form-control rounded-3" rows="3" placeholder="Tulis alasan persetujuan atau penolakan..." wire:model="teacherNote"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 pt-0">
+                        <button type="button" class="btn btn-light rounded-3 px-4 fw-semibold text-muted" wire:click="closeReviewModal">Batal</button>
+                        <button type="button" class="btn {{ $reviewStatus === 'approved' ? 'btn-success' : 'btn-danger' }} rounded-3 px-4 fw-semibold" wire:click="processReview">
+                            Konfirmasi {{ $reviewStatus === 'approved' ? 'Setujui' : 'Tolak' }}
                         </button>
                     </div>
                 </div>
