@@ -26,6 +26,7 @@
                             <i class="bi bi-person-badge"></i>
                             <span>NIS: {{ $student?->nis ?? 'N/A' }}</span>
                             <span class="opacity-50">|</span>
+                            
                             <span>NISN: {{ $student?->nisn ?? 'N/A' }}</span>
                         </p>
                         <p class="mb-0 opacity-90 d-flex align-items-center justify-content-center justify-content-md-start gap-2">
