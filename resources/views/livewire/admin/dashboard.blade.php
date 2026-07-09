@@ -4,8 +4,15 @@
         <div>
             <p class="text-muted mb-0">Selamat datang, {{ auth()->user()->name }}</p>
         </div>
-        <div class="text-muted">
-            <i class="bi bi-calendar3"></i> {{ now()->locale('id')->isoFormat('dddd, D MMMM YYYY') }}
+        <div class="d-flex align-items-center text-muted gap-3">
+            <button wire:click="refreshData" wire:loading.attr="disabled" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2">
+                <i wire:loading.remove class="bi bi-arrow-clockwise"></i>
+                <span wire:loading class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                Refresh Data
+            </button>
+            <div>
+                <i class="bi bi-calendar3"></i> {{ now()->locale('id')->isoFormat('dddd, D MMMM YYYY') }}
+            </div>
         </div>
     </div>
 
