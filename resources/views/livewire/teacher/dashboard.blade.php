@@ -713,13 +713,14 @@
                                 <thead class="table-light text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.05em;">
                                     <tr>
                                         <th width="5%" class="text-center">#</th>
-                                        <th width="12%">NIS</th>
-                                        <th width="28%">Nama Siswa</th>
-                                        <th width="11%" class="text-center text-success"><i class="bi bi-check-circle-fill me-1"></i> Hadir</th>
-                                        <th width="11%" class="text-center text-warning"><i class="bi bi-envelope-fill me-1"></i> Izin</th>
-                                        <th width="11%" class="text-center text-info"><i class="bi bi-heart-pulse-fill me-1"></i> Sakit</th>
-                                        <th width="11%" class="text-center text-primary"><i class="bi bi-award-fill me-1"></i> Dispen</th>
-                                        <th width="11%" class="text-center text-danger"><i class="bi bi-x-circle-fill me-1"></i> Alpa</th>
+                                        <th width="10%">NIS</th>
+                                        <th width="22%">Nama Siswa</th>
+                                        <th width="9%" class="text-center text-success"><i class="bi bi-check-circle-fill me-1"></i> Hadir</th>
+                                        <th width="9%" class="text-center text-warning"><i class="bi bi-envelope-fill me-1"></i> Izin</th>
+                                        <th width="9%" class="text-center text-info"><i class="bi bi-heart-pulse-fill me-1"></i> Sakit</th>
+                                        <th width="9%" class="text-center text-primary"><i class="bi bi-award-fill me-1"></i> Dispen</th>
+                                        <th width="9%" class="text-center text-danger"><i class="bi bi-x-circle-fill me-1"></i> Alpa</th>
+                                        <th width="18%">Catatan</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -807,6 +808,12 @@
                                                         wire:click="setStatus({{ $student->id }}, 'absent')"
                                                         @checked($modalAttendances[$student->id]['status'] === 'absent')>
                                                 </div>
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm border-0 bg-light rounded-3" 
+                                                       style="font-size: 0.85rem;"
+                                                       wire:model="modalAttendances.{{ $student->id }}.note" 
+                                                       placeholder="Tambah catatan...">
                                             </td>
                                         </tr>
                                     @endforeach

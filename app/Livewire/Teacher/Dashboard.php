@@ -87,7 +87,9 @@ class Dashboard extends Component
         try {
             $schedule = Schedule::findOrFail($scheduleId);
 
-            $today = now()->dayOfWeekIso;
+            $attendanceDateStr = $this->filterDate ?: now()->format('Y-m-d');
+            $attendanceDate = \Carbon\Carbon::parse($attendanceDateStr);
+            $attendanceDayOfWeek = $attendanceDate->dayOfWeekIso;
 
             $dayMap = [
                 'Senin'  => 1,
@@ -101,10 +103,10 @@ class Dashboard extends Component
 
             $scheduleDay = $dayMap[$schedule->day] ?? null;
 
-            if ($today !== $scheduleDay) {
+            if ($attendanceDayOfWeek !== $scheduleDay) {
                 $this->dispatch('swal:alert', [
                     'title' => 'Peringatan',
-                    'text' => 'Absensi hanya bisa diisi di hari jadwal.',
+                    'text' => 'Absensi hanya bisa diisi pada hari yang sesuai dengan jadwal (' . $schedule->day . '). Tanggal yang Anda pilih (' . $attendanceDate->format('d-m-Y') . ') adalah hari ' . $this->getDayNameInIndonesian($attendanceDayOfWeek) . '.',
                     'icon' => 'warning'
                 ]);
                 return;
@@ -112,7 +114,7 @@ class Dashboard extends Component
 
             // ✅ lanjut normal
             $this->selectedSchedule = $scheduleId;
-            $this->selectedDate = now()->format('Y-m-d');
+            $this->selectedDate = $attendanceDateStr;
 
             $this->modalStudents = Student::with('user')
                 ->where('study_group_id', $schedule->study_group_id)
