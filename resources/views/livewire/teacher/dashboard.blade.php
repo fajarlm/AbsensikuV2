@@ -25,8 +25,13 @@
                         <h1 class="h3 fw-bold text-primary mb-1">Dashboard Guru</h1>
                         <p class="text-muted mb-0">Kelola data kehadiran siswa untuk kelas Anda</p>
                     </div>
-                    <div class="d-flex align-items-center">
-                        <span class="badge bg-light text-dark fs-6 me-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <button wire:click="refreshData" wire:loading.attr="disabled" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2">
+                            <i wire:loading.remove class="bi bi-arrow-clockwise"></i>
+                            <span wire:loading class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            Refresh Data
+                        </button>
+                        <span class="badge bg-light text-dark fs-6">
                             <i class="bi bi-calendar-check me-1"></i>
                             {{ now()->format('d F Y') }}
                         </span>

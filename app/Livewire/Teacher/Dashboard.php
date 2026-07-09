@@ -204,6 +204,9 @@ class Dashboard extends Component
                 );
             }
 
+            // Clear cache
+            cache()->forget('teacher_dashboard_stats');
+
             $this->dispatch('swal:alert', [
                 'title' => 'Berhasil!',
                 'text' => 'Absensi berhasil disimpan!',
@@ -262,7 +265,9 @@ class Dashboard extends Component
         }
 
         try {
-            $schedules = Schedule::with(['subject.teacher', 'studyGroup'])->get();
+            $schedules = cache()->remember('teacher_dashboard_schedules', 300, function () {
+                return Schedule::with(['subject.teacher', 'studyGroup'])->get();
+            });
             $scheduleIds = $schedules->pluck('id')->toArray();
 
             $query = Attendance::with(['student.user', 'schedule.subject', 'schedule.studyGroup'])
@@ -289,14 +294,16 @@ class Dashboard extends Component
             $attendances = $query->paginate(15);
 
             // Statistics
-            $stats = [
-                'total' => Attendance::whereIn('schedule_id', $scheduleIds)->count(),
-                'present' => Attendance::whereIn('schedule_id', $scheduleIds)->where('status', 'hadir')->count(),
-                'absent' => Attendance::whereIn('schedule_id', $scheduleIds)
-                    ->whereIn('status', ['izin', 'sakit', 'alpa'])->count(),
-                'today' => Attendance::whereIn('schedule_id', $scheduleIds)
-                    ->whereDate('attendance_date', now())->count(),
-            ];
+            $stats = cache()->remember('teacher_dashboard_stats', 300, function () use ($scheduleIds) {
+                return [
+                    'total' => Attendance::whereIn('schedule_id', $scheduleIds)->count(),
+                    'present' => Attendance::whereIn('schedule_id', $scheduleIds)->where('status', 'hadir')->count(),
+                    'absent' => Attendance::whereIn('schedule_id', $scheduleIds)
+                        ->whereIn('status', ['izin', 'sakit', 'alpa'])->count(),
+                    'today' => Attendance::whereIn('schedule_id', $scheduleIds)
+                        ->whereDate('attendance_date', now())->count(),
+                ];
+            });
 
             $this->notes = Attendance::whereIn('id', $attendances->pluck('id'))
                 ->pluck('note', 'id')
@@ -379,6 +386,9 @@ class Dashboard extends Component
                 }
             }
 
+            // Clear cache since attendance records were updated
+            cache()->forget('teacher_dashboard_stats');
+
             $this->dispatch('swal:alert', [
                 'title' => 'Berhasil!',
                 'text' => 'Status pengajuan berhasil diperbarui.',
@@ -392,6 +402,17 @@ class Dashboard extends Component
                 'icon' => 'error'
             ]);
         }
+    }
+
+    public function refreshData()
+    {
+        cache()->forget('teacher_dashboard_schedules');
+        cache()->forget('teacher_dashboard_stats');
+        $this->dispatch('swal:alert', [
+            'title' => 'Berhasil!',
+            'text' => 'Data dashboard berhasil diperbarui!',
+            'icon' => 'success'
+        ]);
     }
 
     private function getDayNameInIndonesian($dayOfWeekIso)
