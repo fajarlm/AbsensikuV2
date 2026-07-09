@@ -96,7 +96,10 @@ class Dashboard extends Component
         $this->name = $user->name;
         $this->username = $user->username;
 
-        $student = Student::with(['studyGroup', 'user'])->where('user_id', $user->id)->first();
+        $student = cache()->remember("student_user_{$user->id}", 600, function () use ($user) {
+            return Student::with(['studyGroup', 'user'])->where('user_id', $user->id)->first();
+        });
+
         if (!$student) {
             $this->dispatch('swal:alert', [
                 'title' => 'Data Siswa Tidak Ditemukan!',
@@ -132,7 +135,9 @@ class Dashboard extends Component
             ]);
         }
 
-        $student = Student::with(['studyGroup', 'user'])->where('user_id', $user->id)->first();
+        $student = cache()->remember("student_user_{$user->id}", 600, function () use ($user) {
+            return Student::with(['studyGroup', 'user'])->where('user_id', $user->id)->first();
+        });
 
         $data = [
             'student' => $student,
@@ -151,7 +156,9 @@ class Dashboard extends Component
                 break;
 
             case 'profile':
-                $data['studyGroups'] = StudyGroup::all();
+                $data['studyGroups'] = cache()->remember('study_groups_all', 600, function () {
+                    return StudyGroup::all();
+                });
                 break;
         }
 
@@ -166,12 +173,14 @@ class Dashboard extends Component
             return collect();
         }
 
-        return Schedule::with('subject')
-            ->where('study_group_id', $student->study_group_id)
-            ->orderByRaw("FIELD(day, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu')")
-            ->orderBy('start_time')
-            ->get()
-            ->groupBy('day');
+        return cache()->remember("student_schedules_{$student->study_group_id}", 300, function () use ($student) {
+            return Schedule::with('subject')
+                ->where('study_group_id', $student->study_group_id)
+                ->orderByRaw("FIELD(day, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu')")
+                ->orderBy('start_time')
+                ->get()
+                ->groupBy('day');
+        });
     }
 
     private function getAttendances()
@@ -245,6 +254,9 @@ class Dashboard extends Component
             $user->profile = $path;
             $user->save();
 
+            // Clear cache
+            cache()->forget("student_user_{$user->id}");
+
             $this->photoPreview = asset('storage/' . $path);
 
             $this->profile = null;
@@ -301,6 +313,9 @@ class Dashboard extends Component
 
             $user->save();
 
+            // Clear cache
+            cache()->forget("student_user_{$user->id}");
+
             $this->reset(['current_password', 'new_password', 'new_password_confirmation']);
 
             session()->flash('profile_message', 'Profile updated successfully!');
@@ -329,6 +344,9 @@ class Dashboard extends Component
                 $user->profile = null;
                 $user->save();
 
+                // Clear cache
+                cache()->forget("student_user_{$user->id}");
+
                 $this->photoPreview = null;
                 $this->profile = null;
 
@@ -344,6 +362,26 @@ class Dashboard extends Component
                 'icon' => 'error'
             ]);
         }
+    }
+
+    public function refreshData()
+    {
+        $user = Auth::user();
+        if ($user) {
+            cache()->forget("student_user_{$user->id}");
+            $student = Student::where('user_id', $user->id)->first();
+            if ($student) {
+                cache()->forget("student_schedules_{$student->study_group_id}");
+            }
+        }
+        cache()->forget('study_groups_all');
+
+        $this->mount();
+        $this->dispatch('swal:alert', [
+            'title' => 'Berhasil!',
+            'text' => 'Data dashboard berhasil diperbarui!',
+            'icon' => 'success'
+        ]);
     }
 
     public function getAttendanceStatus($scheduleId, $date)
