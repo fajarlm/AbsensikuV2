@@ -318,11 +318,17 @@ class Dashboard extends Component
                 ];
             });
 
-            $this->notes = Attendance::whereIn('id', $attendances->pluck('id'))
+            $dbNotes = Attendance::whereIn('id', $attendances->pluck('id'))
                 ->pluck('note', 'id')
                 ->map(function ($note) {
                     return $note ?? '';
                 })->toArray();
+
+            foreach ($dbNotes as $id => $note) {
+                if (!isset($this->notes[$id])) {
+                    $this->notes[$id] = $note;
+                }
+            }
         } catch (\Exception $e) {
             $this->dispatch('swal:alert', [
                 'title' => 'Error!',
@@ -428,6 +434,21 @@ class Dashboard extends Component
             'text' => 'Data dashboard berhasil diperbarui!',
             'icon' => 'success'
         ]);
+    }
+
+    public function updatedNotes($value, $key)
+    {
+        try {
+            $attendance = Attendance::findOrFail($key);
+            $attendance->note = $value;
+            $attendance->save();
+        } catch (\Exception $e) {
+            $this->dispatch('swal:alert', [
+                'title' => 'Error!',
+                'text' => 'Gagal memperbarui catatan: ' . $e->getMessage(),
+                'icon' => 'error'
+            ]);
+        }
     }
 
     private function getDayNameInIndonesian($dayOfWeekIso)
