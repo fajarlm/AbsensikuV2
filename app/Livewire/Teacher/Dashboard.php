@@ -87,7 +87,9 @@ class Dashboard extends Component
         try {
             $schedule = Schedule::findOrFail($scheduleId);
 
-            $today = now()->dayOfWeekIso;
+            $attendanceDateStr = $this->filterDate ?: now()->format('Y-m-d');
+            $attendanceDate = \Carbon\Carbon::parse($attendanceDateStr);
+            $attendanceDayOfWeek = $attendanceDate->dayOfWeekIso;
 
             $dayMap = [
                 'Senin'  => 1,
@@ -101,10 +103,10 @@ class Dashboard extends Component
 
             $scheduleDay = $dayMap[$schedule->day] ?? null;
 
-            if ($today !== $scheduleDay) {
+            if ($attendanceDayOfWeek !== $scheduleDay) {
                 $this->dispatch('swal:alert', [
                     'title' => 'Peringatan',
-                    'text' => 'Absensi hanya bisa diisi di hari jadwal.',
+                    'text' => 'Absensi hanya bisa diisi pada hari yang sesuai dengan jadwal (' . $schedule->day . '). Tanggal yang Anda pilih (' . $attendanceDate->format('d-m-Y') . ') adalah hari ' . $this->getDayNameInIndonesian($attendanceDayOfWeek) . '.',
                     'icon' => 'warning'
                 ]);
                 return;
@@ -112,7 +114,7 @@ class Dashboard extends Component
 
             // ✅ lanjut normal
             $this->selectedSchedule = $scheduleId;
-            $this->selectedDate = now()->format('Y-m-d');
+            $this->selectedDate = $attendanceDateStr;
 
             $this->modalStudents = Student::with('user')
                 ->where('study_group_id', $schedule->study_group_id)
@@ -204,6 +206,10 @@ class Dashboard extends Component
                 );
             }
 
+            // Clear cache
+            $teacherId = $teacher->id;
+            cache()->forget('teacher_dashboard_stats_' . $teacherId);
+
             $this->dispatch('swal:alert', [
                 'title' => 'Berhasil!',
                 'text' => 'Absensi berhasil disimpan!',
@@ -251,20 +257,33 @@ class Dashboard extends Component
             ]);
         }
 
-        $pendingSubmissionsCount = Submission::where('status', 'pending')->count();
+        $teacherId = $user->teacher->id;
+
+        // Get schedules for the logged in teacher
+        $schedules = cache()->remember('teacher_dashboard_schedules_' . $teacherId, 300, function () use ($teacherId) {
+            return Schedule::whereHas('subject', function ($query) use ($teacherId) {
+                $query->where('teacher_id', $teacherId);
+            })->with(['subject.teacher', 'studyGroup'])->get();
+        });
+        $scheduleIds = $schedules->pluck('id')->toArray();
+        $studyGroupIds = $schedules->pluck('study_group_id')->unique()->toArray();
+
+        $pendingSubmissionsCount = Submission::whereHas('student', function ($query) use ($studyGroupIds) {
+            $query->whereIn('study_group_id', $studyGroupIds);
+        })->where('status', 'pending')->count();
+        
         $submissions = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 15);
 
         if ($this->activeTab === 'submissions') {
-            $submissions = Submission::with(['student.user', 'student.studyGroup'])
+            $submissions = Submission::whereHas('student', function ($query) use ($studyGroupIds) {
+                $query->whereIn('study_group_id', $studyGroupIds);
+            })->with(['student.user', 'student.studyGroup'])
                 ->orderByRaw("FIELD(status, 'pending', 'approved', 'rejected')")
                 ->orderBy('created_at', 'desc')
                 ->paginate(15);
         }
 
         try {
-            $schedules = Schedule::with(['subject.teacher', 'studyGroup'])->get();
-            $scheduleIds = $schedules->pluck('id')->toArray();
-
             $query = Attendance::with(['student.user', 'schedule.subject', 'schedule.studyGroup'])
                 ->whereIn('schedule_id', $scheduleIds)
                 ->when($this->search, function ($query) {
@@ -289,20 +308,29 @@ class Dashboard extends Component
             $attendances = $query->paginate(15);
 
             // Statistics
-            $stats = [
-                'total' => Attendance::whereIn('schedule_id', $scheduleIds)->count(),
-                'present' => Attendance::whereIn('schedule_id', $scheduleIds)->where('status', 'hadir')->count(),
-                'absent' => Attendance::whereIn('schedule_id', $scheduleIds)
-                    ->whereIn('status', ['izin', 'sakit', 'alpa'])->count(),
-                'today' => Attendance::whereIn('schedule_id', $scheduleIds)
-                    ->whereDate('attendance_date', now())->count(),
-            ];
+            $stats = cache()->remember('teacher_dashboard_stats_' . $teacherId, 300, function () use ($scheduleIds) {
+                return [
+                    'total' => Attendance::whereIn('schedule_id', $scheduleIds)->count(),
+                    'present' => Attendance::whereIn('schedule_id', $scheduleIds)->where('status', 'present')->count(),
+                    'absent' => Attendance::whereIn('schedule_id', $scheduleIds)
+                        ->whereIn('status', ['absent', 'sick', 'permission', 'dispensed'])->count(),
+                    'today' => Attendance::whereIn('schedule_id', $scheduleIds)
+                        ->whereDate('attendance_date', now()->toDateString())
+                        ->where('status', 'present')->count(),
+                ];
+            });
 
-            $this->notes = Attendance::whereIn('id', $attendances->pluck('id'))
+            $dbNotes = Attendance::whereIn('id', $attendances->pluck('id'))
                 ->pluck('note', 'id')
                 ->map(function ($note) {
                     return $note ?? '';
                 })->toArray();
+
+            foreach ($dbNotes as $id => $note) {
+                if (!isset($this->notes[$id])) {
+                    $this->notes[$id] = $note;
+                }
+            }
         } catch (\Exception $e) {
             $this->dispatch('swal:alert', [
                 'title' => 'Error!',
@@ -379,6 +407,10 @@ class Dashboard extends Component
                 }
             }
 
+            // Clear cache since attendance records were updated
+            $teacherId = Auth::user()->teacher->id;
+            cache()->forget('teacher_dashboard_stats_' . $teacherId);
+
             $this->dispatch('swal:alert', [
                 'title' => 'Berhasil!',
                 'text' => 'Status pengajuan berhasil diperbarui.',
@@ -389,6 +421,33 @@ class Dashboard extends Component
             $this->dispatch('swal:alert', [
                 'title' => 'Gagal Memproses!',
                 'text' => $e->getMessage(),
+                'icon' => 'error'
+            ]);
+        }
+    }
+
+    public function refreshData()
+    {
+        $teacherId = Auth::user()->teacher->id;
+        cache()->forget('teacher_dashboard_schedules_' . $teacherId);
+        cache()->forget('teacher_dashboard_stats_' . $teacherId);
+        $this->dispatch('swal:alert', [
+            'title' => 'Berhasil!',
+            'text' => 'Data dashboard berhasil diperbarui!',
+            'icon' => 'success'
+        ]);
+    }
+
+    public function updatedNotes($value, $key)
+    {
+        try {
+            $attendance = Attendance::findOrFail($key);
+            $attendance->note = $value;
+            $attendance->save();
+        } catch (\Exception $e) {
+            $this->dispatch('swal:alert', [
+                'title' => 'Error!',
+                'text' => 'Gagal memperbarui catatan: ' . $e->getMessage(),
                 'icon' => 'error'
             ]);
         }

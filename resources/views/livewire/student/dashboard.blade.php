@@ -34,7 +34,12 @@
                             <span>{{ $student?->studyGroup?->name ?? 'N/A' }} ({{ $student?->studyGroup?->major ?? 'N/A' }})</span>
                         </p>
                     </div>
-                    <div class="col-12 col-md-auto text-center text-md-end mt-3 mt-md-0">
+                    <div class="col-12 col-md-auto text-center text-md-end mt-3 mt-md-0 d-flex flex-column flex-md-row align-items-center gap-2">
+                        <button wire:click="refreshData" wire:loading.attr="disabled" class="btn btn-sm btn-light bg-opacity-20 text-white border-0 py-2 px-3 rounded-3 d-flex align-items-center gap-2">
+                            <i wire:loading.remove class="bi bi-arrow-clockwise text-white"></i>
+                            <span wire:loading class="spinner-border spinner-border-sm text-white" role="status" aria-hidden="true"></span>
+                            Refresh Data
+                        </button>
                         <div class="d-inline-flex align-items-center gap-2 px-3 py-2 bg-white bg-opacity-20 border border-white border-opacity-20 rounded-3">
                             <i class="bi bi-calendar3"></i>
                             <span class="fw-semibold">{{ \Carbon\Carbon::parse($today)->translatedFormat('l, d F Y') }}</span>
